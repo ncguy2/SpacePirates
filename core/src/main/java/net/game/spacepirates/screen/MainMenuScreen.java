@@ -3,10 +3,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.kotcrab.vis.ui.widget.VisTextButton;
+import net.game.spacepirates.SpacePiratesLauncher;
 
 
 public class MainMenuScreen implements Screen {
@@ -15,6 +18,11 @@ public class MainMenuScreen implements Screen {
     Viewport stageViewport;
     OrthographicCamera stageCamera;
     VisTextButton boottun;
+    private SpacePiratesLauncher spacePiratesLauncher;
+
+    public MainMenuScreen(SpacePiratesLauncher spacePiratesLauncher) {
+        this.spacePiratesLauncher = spacePiratesLauncher;
+    }
 
     @Override
     public void show() {
@@ -24,7 +32,13 @@ public class MainMenuScreen implements Screen {
 
         Gdx.input.setInputProcessor(stage);
 
-        boottun = new VisTextButton("dis iz a bootun");
+        boottun = new VisTextButton("dis iz a bootun dat moovs u 2 gaem scren");
+        boottun.addListener(new ClickListener(){
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                spacePiratesLauncher.setScreen(new GameScreen());
+            }
+        });
 
         stage.addActor(boottun);
 

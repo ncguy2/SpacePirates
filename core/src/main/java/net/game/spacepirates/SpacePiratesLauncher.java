@@ -10,7 +10,7 @@ public class SpacePiratesLauncher extends Game {
     @Override
     public void create() {
         VisUI.load();
-        setScreen(new MainMenuScreen());
+        setScreen(new MainMenuScreen(this));
     }
 
     @Override
