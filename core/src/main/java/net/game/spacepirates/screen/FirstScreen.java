@@ -1,4 +1,4 @@
-package net.game.spacepirates;
+package net.game.spacepirates.screen;
 
 import com.badlogic.gdx.Screen;
 
