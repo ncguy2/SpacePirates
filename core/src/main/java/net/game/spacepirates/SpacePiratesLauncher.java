@@ -2,6 +2,7 @@ package net.game.spacepirates;
 
 import com.badlogic.gdx.Game;
 import com.kotcrab.vis.ui.VisUI;
+import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.screen.MainMenuScreen;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
@@ -10,5 +11,11 @@ public class SpacePiratesLauncher extends Game {
     public void create() {
         VisUI.load();
         setScreen(new MainMenuScreen());
+    }
+
+    @Override
+    public void render() {
+        AssetHandler.instance().Update();
+        super.render();
     }
 }

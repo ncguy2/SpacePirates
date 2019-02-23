@@ -3,15 +3,16 @@ package net.game.spacepirates.asset;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.assets.loaders.AssetLoader;
 import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
-import com.badlogic.gdx.utils.ObjectMap;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -24,7 +25,6 @@ public class AssetHandler implements Disposable {
     protected Map<String, Consumer<?>> asyncRequests;
     protected AssetManager manager;
     boolean isLoading = false;
-    ObjectMap<Class, ObjectMap<String, AssetLoader>> loaders;
 
     private AssetHandler() {
         manager = new AssetManager();
@@ -208,27 +208,6 @@ public class AssetHandler implements Disposable {
     public void dispose() {
         manager.dispose();
         instance = null;
-    }
-
-    public List<String> getLoadersOfType(Class<?> assetType) {
-        if(loaders == null) {
-            return Arrays.asList(
-                    "g3dj",
-                    "g3db"
-            );
-        }
-
-        List<String> exts = new ArrayList<>();
-
-        ObjectMap<String, AssetLoader> entries = loaders.get(assetType);
-        for (String key : entries.keys()) {
-            if(key.isEmpty()) {
-                continue;
-            }
-            exts.add(key);
-        }
-
-        return exts;
     }
 
 }
