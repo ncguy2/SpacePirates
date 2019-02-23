@@ -19,6 +19,7 @@ public class Lwjgl3Launcher {
         configuration.setTitle("SpacePirates");
         configuration.setWindowedMode(800, 600);
         configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
+        configuration.useOpenGL3(true, 3, 3);
         return configuration;
     }
 }
