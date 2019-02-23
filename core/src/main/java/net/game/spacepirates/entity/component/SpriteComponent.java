@@ -7,7 +7,7 @@ import java.util.List;
 public class SpriteComponent extends RenderComponent<SpriteComponent> {
 
     public String textureRef;
-    public Color colour;
+    public final Color colour = new Color(1, 1, 1, 1);
 
     public SpriteComponent(String name) {
         super(name);

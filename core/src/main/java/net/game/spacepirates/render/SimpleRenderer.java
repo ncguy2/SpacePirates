@@ -24,6 +24,7 @@ public class SimpleRenderer extends AbstractRenderer {
 
     @Override
     public void renderProxies(List<RenderComponent.RenderProxy> proxyList) {
+        batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
 
         for (RenderComponent.RenderProxy proxy : proxyList) {
@@ -33,6 +34,8 @@ public class SimpleRenderer extends AbstractRenderer {
             s.setPosition(transform.translation.x, transform.translation.y);
             s.setRotation(transform.rotation);
             s.setSize(transform.scale.x, transform.scale.y);
+            s.setU2(1);
+            s.setV2(1);
             if(s.getTexture() != null) {
                 s.draw(batch);
             }
@@ -43,7 +46,7 @@ public class SimpleRenderer extends AbstractRenderer {
 
     @Override
     public void resize(int width, int height) {
-        worldCamera.setToOrtho(true, width, height);
+        worldCamera.setToOrtho(false, width, height);
     }
 
     public Sprite get(String ref) {

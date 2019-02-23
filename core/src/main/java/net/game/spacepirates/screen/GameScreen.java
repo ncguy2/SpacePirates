@@ -30,7 +30,10 @@ public class GameScreen implements Screen {
         world = new GameWorld();
 
         Entity entity = world.addEntity();
-        entity.addComponent(new SpriteComponent("Sprite")).textureRef = "textures/awesomeface.png";
+        SpriteComponent sprite = new SpriteComponent("Sprite");
+        sprite.textureRef = "textures/awesomeface.png";
+        sprite.transform.scale.set(128, 128);
+        entity.addComponent(sprite);
 
         renderer = new SimpleRenderer();
         renderer.init();
