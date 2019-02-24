@@ -1,14 +1,19 @@
 package net.game.spacepirates.world;
 
+import com.badlogic.gdx.Gdx;
 import net.game.spacepirates.entity.Entity;
+import net.game.spacepirates.entity.component.EntityComponent;
 import net.game.spacepirates.entity.component.RenderComponent;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class GameWorld {
 
@@ -20,9 +25,40 @@ public class GameWorld {
         executorService = Executors.newWorkStealingPool();
     }
 
-    public Entity addEntity() {
-        Entity e = new Entity();
-        entities.add(e);
+    public void addEntity() {
+        addEntity(Entity.class);
+    }
+
+    public void addEntity(Consumer<Entity> task) {
+        Gdx.app.postRunnable(() -> task.accept(addEntityImmediate()));
+    }
+
+    public <T extends Entity> void addEntity(Class<T> type, Consumer<T> task) {
+        Gdx.app.postRunnable(() -> task.accept(addEntityImmediate(type)));
+    }
+
+    public <T extends Entity> void addEntity(Class<T> type) {
+        Gdx.app.postRunnable(() -> addEntityImmediate(type));
+    }
+
+    public Entity addEntityImmediate() {
+        return addEntityImmediate(Entity.class);
+    }
+
+    public <T extends Entity> T addEntityImmediate(Class<T> entityType) {
+        try {
+            T entity = createEntity_Impl(entityType);
+            entities.add(entity);
+            return entity;
+        } catch (NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T extends Entity> T createEntity_Impl(Class<T> entityType) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        T e = entityType.getConstructor().newInstance();
+        e.setWorld(this);
         return e;
     }
 
@@ -53,4 +89,7 @@ public class GameWorld {
         return proxies;
     }
 
+    public Stream<Entity> getEntitiesWith(Class<? extends EntityComponent>... components) {
+        return this.entities.stream().filter(e -> e.hasAll(components));
+    }
 }

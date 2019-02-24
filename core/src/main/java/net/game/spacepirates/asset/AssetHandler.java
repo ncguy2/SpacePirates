@@ -5,6 +5,7 @@ import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
@@ -157,6 +158,7 @@ public class AssetHandler implements Disposable {
                 p.magFilter = Texture.TextureFilter.Linear;
                 p.wrapU = Texture.TextureWrap.Repeat;
                 p.wrapV = Texture.TextureWrap.Repeat;
+                p.format = Pixmap.Format.RGBA8888;
                 manager.load(path, Texture.class, p);
             } else manager.load(path, type);
         }

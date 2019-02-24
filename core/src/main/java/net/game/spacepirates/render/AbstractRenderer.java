@@ -9,5 +9,6 @@ public abstract class AbstractRenderer {
     public abstract void init();
     public abstract void renderProxies(List<RenderComponent.RenderProxy> proxyList);
     public abstract void resize(int width, int height);
+    public abstract void reInit();
 
 }

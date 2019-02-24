@@ -1,4 +1,5 @@
 package net.game.spacepirates.screen;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
@@ -10,6 +11,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.kotcrab.vis.ui.widget.VisTextButton;
 import net.game.spacepirates.SpacePiratesLauncher;
+import net.game.spacepirates.input.InputHelper;
 
 
 public class MainMenuScreen implements Screen {
@@ -30,13 +32,13 @@ public class MainMenuScreen implements Screen {
         stageViewport = new ScreenViewport(stageCamera);
         stage = new Stage(stageViewport);
 
-        Gdx.input.setInputProcessor(stage);
+        InputHelper.AddProcessors(stage);
 
         boottun = new VisTextButton("dis iz a bootun dat moovs u 2 gaem scren");
         boottun.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                spacePiratesLauncher.setScreen(new GameScreen());
+                spacePiratesLauncher.setScreen(new GameScreen(spacePiratesLauncher));
             }
         });
 
@@ -46,9 +48,6 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void render(float delta) {
-
-//        AssetHandler.instance().Update();
-
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -77,7 +76,7 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void hide() {
-
+        InputHelper.RemoveProcessors(stage);
     }
 
     @Override

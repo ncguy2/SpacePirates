@@ -1,9 +1,17 @@
 package net.game.spacepirates.screen;
 
 import com.badlogic.gdx.Screen;
+import net.game.spacepirates.SpacePiratesLauncher;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
+
+    private final SpacePiratesLauncher spacePiratesLauncher;
+
+    public FirstScreen(SpacePiratesLauncher spacePiratesLauncher) {
+        this.spacePiratesLauncher = spacePiratesLauncher;
+    }
+
     @Override
     public void show() {
         // Prepare your screen here.
