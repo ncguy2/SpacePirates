@@ -2,6 +2,7 @@ package net.game.spacepirates.render;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,16 +13,19 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Pool;
 import net.game.spacepirates.data.Transform2D;
 import net.game.spacepirates.entity.component.RenderComponent;
+import net.game.spacepirates.input.PostProcessingCamera;
+import net.game.spacepirates.render.post.ParticlePostProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Deprecated
-public class SimpleRenderer extends AbstractRenderer {
+public class BufferedRenderer extends AbstractRenderer {
 
     public OrthographicCamera worldCamera;
     public SpriteBatch batch;
     public ShaderProgram shader;
+    public PostProcessingCamera<OrthographicCamera> ppCamera;
+    protected TextureRegion region;
 
     Pool<Sprite> spritePool = new Pool<Sprite>() {
         @Override
@@ -34,6 +38,8 @@ public class SimpleRenderer extends AbstractRenderer {
     public void init() {
         worldCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch = new SpriteBatch();
+        ppCamera = new PostProcessingCamera<>(worldCamera, new ParticlePostProcessor());
+        region = new TextureRegion();
         loadShader();
     }
 
@@ -43,7 +49,7 @@ public class SimpleRenderer extends AbstractRenderer {
             System.out.println("Cannot find " + vert.toString());
             return;
         }
-        
+
         FileHandle frag = Gdx.files.internal("shaders/simple/simple.frag");
         if(!frag.exists()) {
             System.out.println("Cannot find " + frag.toString());
@@ -69,6 +75,9 @@ public class SimpleRenderer extends AbstractRenderer {
 
     @Override
     public void renderProxies(List<RenderComponent.RenderProxy> proxyList) {
+        ppCamera.begin();
+        ppCamera.clear(Color.BLACK, true, false);
+
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
         batch.enableBlending();
@@ -99,6 +108,14 @@ public class SimpleRenderer extends AbstractRenderer {
         usedSprites.clear();
 
         ShapeRenderHost.get().draw(worldCamera.combined);
+
+        ppCamera.end();
+
+        region.setTexture(ppCamera.processAndFlatten(batch, Gdx.graphics.getDeltaTime()));
+        if((ppCamera.processors.size() & 1) == 1 != region.isFlipY()) {
+            region.flip(false, true);
+        }
+//        texture = ppCamera.fbo.getColorBufferTexture();
     }
 
     @Override
@@ -113,7 +130,7 @@ public class SimpleRenderer extends AbstractRenderer {
 
     @Override
     public TextureRegion getTexture() {
-        return null;
+        return region;
     }
 
     public Sprite get(TextureRegion reg) {

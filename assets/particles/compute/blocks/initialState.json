@@ -1,0 +1,20 @@
+{
+  "name": "Initial State",
+  "type": "Spawn",
+  "datumKey": "datum",
+  "uniforms": [
+    "float u_initialLife = 10",
+    "vec4 u_initialColour = vec4(1.0)",
+    "vec2 u_initialScale = vec2(1.0)"
+  ],
+  "fragment": [
+    "datum.Position = u_spawnPoint;",
+    "datum.Velocity = vec2(0.0);",
+    "datum.Colour = u_initialColour;",
+    "datum.BaseColour = u_initialColour;",
+    "datum.Life = u_initialLife;",
+    "datum.MaxLife = u_initialLife;",
+    "datum.Scale = u_initialScale.xy;",
+    "datum.TexCoords = vec2(Random(), Random());"
+  ]
+}

@@ -6,14 +6,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.kotcrab.vis.ui.widget.VisImage;
 import net.game.spacepirates.SpacePiratesLauncher;
 import net.game.spacepirates.engine.WorldEngine;
 import net.game.spacepirates.entity.types.LocalPlayer;
 import net.game.spacepirates.render.AbstractRenderer;
-import net.game.spacepirates.render.SimpleRenderer;
+import net.game.spacepirates.render.BufferedRenderer;
 import net.game.spacepirates.system.CannonSystem;
 import net.game.spacepirates.system.InputSystem;
 import net.game.spacepirates.system.MovementSystem;
+import net.game.spacepirates.system.ParticleSystem;
 import net.game.spacepirates.world.GameWorld;
 
 public class GameScreen implements Screen {
@@ -26,6 +28,7 @@ public class GameScreen implements Screen {
     GameWorld world;
     WorldEngine engine;
     AbstractRenderer renderer;
+    VisImage outputImg;
 
     public GameScreen(SpacePiratesLauncher spacePiratesLauncher) {
         this.spacePiratesLauncher = spacePiratesLauncher;
@@ -40,6 +43,10 @@ public class GameScreen implements Screen {
         stageCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         stageViewport = new ScreenViewport(stageCamera);
         stage = new Stage(stageViewport);
+
+        outputImg = new VisImage();
+
+        stage.addActor(outputImg);
 
         world = new GameWorld();
 
@@ -59,13 +66,15 @@ public class GameScreen implements Screen {
         player.multiSpriteComponent.addRef("textures/sprites/craft/parts/sail/sail4.png");
         player.velocityComponent.speed = 100;
 
-        renderer = new SimpleRenderer();
+        renderer = new BufferedRenderer();
         renderer.init();
 
         engine = new WorldEngine(world);
+        engine.addSystem(new ParticleSystem(world));
         engine.addSystem(new InputSystem(world));
         engine.addSystem(new MovementSystem(world));
         engine.addSystem(new CannonSystem(world));
+
     }
 
     @Override
@@ -76,6 +85,7 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         renderer.renderProxies(world.getRenderProxies());
+        outputImg.setDrawable(renderer.getTexture().getTexture());
 
         stage.act(delta);
         stage.draw();
@@ -85,6 +95,7 @@ public class GameScreen implements Screen {
     public void resize(int width, int height) {
         renderer.resize(width, height);
         stageViewport.update(width, height, true);
+        outputImg.setBounds(0, 0, width, height);
     }
 
     @Override
@@ -104,6 +115,5 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-
     }
 }

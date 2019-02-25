@@ -62,7 +62,12 @@ public class GameWorld {
         return e;
     }
 
-    public boolean removeEntity(Entity e) {
+    public void removeEntity(Entity e) {
+        Gdx.app.postRunnable(() -> removeEntityImmediate(e));
+    }
+    public boolean removeEntityImmediate(Entity e) {
+        e.components.forEach(c -> c.onRemoveFromEntity(e));
+        e.components.clear();
         return entities.remove(e);
     }
 

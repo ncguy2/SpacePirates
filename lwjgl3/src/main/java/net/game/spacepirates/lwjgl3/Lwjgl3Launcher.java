@@ -4,9 +4,20 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import net.game.spacepirates.SpacePiratesLauncher;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.util.Scanner;
+
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        System.out.println(runtime.getName());
+
+        System.out.println("Renderdoc injection point");
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+
         createApplication();
     }
 
