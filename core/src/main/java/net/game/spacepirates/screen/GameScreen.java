@@ -4,11 +4,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.kotcrab.vis.ui.widget.VisImage;
 import net.game.spacepirates.SpacePiratesLauncher;
 import net.game.spacepirates.engine.WorldEngine;
+import net.game.spacepirates.entity.Entity;
+import net.game.spacepirates.entity.component.CollisionComponent;
 import net.game.spacepirates.entity.types.LocalPlayer;
 import net.game.spacepirates.render.AbstractRenderer;
 import net.game.spacepirates.render.BufferedRenderer;
@@ -16,16 +20,24 @@ import net.game.spacepirates.system.CannonSystem;
 import net.game.spacepirates.system.InputSystem;
 import net.game.spacepirates.system.MovementSystem;
 import net.game.spacepirates.system.ParticleSystem;
-import net.game.spacepirates.world.GameWorld;
+import net.game.spacepirates.world.PhysicsWorld;
+import net.game.spacepirates.world.physics.workers.SpawnEntityTask;
+
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static net.game.spacepirates.world.PhysicsWorld.SCREEN_TO_WORLD;
 
 public class GameScreen implements Screen {
+
+    AtomicInteger asyncStartupTaskCounter = new AtomicInteger(0);
 
     private final SpacePiratesLauncher spacePiratesLauncher;
     OrthographicCamera stageCamera;
     ScreenViewport stageViewport;
     Stage stage;
 
-    GameWorld world;
+    PhysicsWorld world;
     WorldEngine engine;
     AbstractRenderer renderer;
     VisImage outputImg;
@@ -48,44 +60,87 @@ public class GameScreen implements Screen {
 
         stage.addActor(outputImg);
 
-        world = new GameWorld();
+        world = new PhysicsWorld();
 
-//        Entity entity = world.addEntityImmediate();
-//        SpriteComponent sprite = new SpriteComponent("Sprite");
-//        sprite.textureRef = "textures/awesomeface.png";
-//        sprite.transform.scale.set(128, 128);
-//        entity.addComponent(sprite);
-//        entity.addComponent(new VelocityComponent("Velocity")).speed = 100;
-//        entity.addComponent(new InputComponent("Input"));
+        BodyDef def = new BodyDef();
+        def.type = BodyDef.BodyType.DynamicBody;
+        def.position.set(new Vector2(0, 0));
+        FixtureDef fixDef = new FixtureDef();
+        fixDef.shape = new CircleShape();
+        fixDef.shape.setRadius(32 * SCREEN_TO_WORLD);
 
+        fixDef.density = 1f;
+        fixDef.friction = 1f;
+        fixDef.restitution = 1f;
+
+        ((CircleShape) fixDef.shape).setPosition(new Vector2(fixDef.shape.getRadius(), fixDef.shape.getRadius()));
+
+        SpawnEntityTask task = new SpawnEntityTask(world.getPhysicsWorld(), def, fixDef);
         LocalPlayer player = world.addEntityImmediate(LocalPlayer.class);
-        player.multiSpriteComponent.addRef("textures/sprites/craft/parts/engine/engine3.png");
-        player.multiSpriteComponent.addRef("textures/sprites/craft/parts/gun/gun2.png");
-        player.multiSpriteComponent.addRef("textures/sprites/craft/parts/hull/hull2.png");
-        player.multiSpriteComponent.addRef("textures/sprites/craft/parts/mast/mast2.png");
-        player.multiSpriteComponent.addRef("textures/sprites/craft/parts/sail/sail4.png");
-        player.velocityComponent.speed = 100;
+        player.velocityComponent.speed = 256;
+        player.setEnabled(false);
+        asyncStartupTaskCounter.incrementAndGet();
+        ForkJoinPool.commonPool().execute(() -> {
+            Body body = task.run();
+            body.setSleepingAllowed(false);
+            body.setAngularDamping(1);
+            body.setLinearDamping(1);
+            body.setFixedRotation(true);
+            ((CollisionComponent) player.rootComponent).body = body;
+            player.setEnabled(true);
+            asyncStartupTaskCounter.decrementAndGet();
+            check();
+        });
 
-        renderer = new BufferedRenderer();
+        Entity floor = world.addEntityImmediate();
+        floor.setEnabled(false);
+        floor.setRootComponent(new CollisionComponent("Collision"));
+        floor.getTransform().setWorldTranslation(new Vector2(400, 10).scl(SCREEN_TO_WORLD));
+        def = new BodyDef();
+        def.position.set(new Vector2(0, 0));
+        fixDef = new FixtureDef();
+        fixDef.shape = new PolygonShape();
+        ((PolygonShape) fixDef.shape).setAsBox(400 * SCREEN_TO_WORLD, 5 * SCREEN_TO_WORLD);
+        SpawnEntityTask task2 = new SpawnEntityTask(world.getPhysicsWorld(), def, fixDef);
+        asyncStartupTaskCounter.incrementAndGet();
+        ForkJoinPool.commonPool().execute(() -> {
+            ((CollisionComponent) floor.rootComponent).body = task2.run();
+            ((CollisionComponent) floor.rootComponent).body.setSleepingAllowed(false);
+            floor.setEnabled(true);
+            asyncStartupTaskCounter.decrementAndGet();
+            check();
+        });
+
+
+        renderer = new BufferedRenderer().setPhysicsWorld(world);
         renderer.init();
 
         engine = new WorldEngine(world);
         engine.addSystem(new ParticleSystem(world));
-        engine.addSystem(new InputSystem(world));
-        engine.addSystem(new MovementSystem(world));
         engine.addSystem(new CannonSystem(world));
+    }
 
+    void check() {
+        if(asyncStartupTaskCounter.get() <= 0) {
+            Gdx.app.postRunnable(() -> {
+                engine.addSystem(new InputSystem(world));
+                engine.addSystem(new MovementSystem(world));
+            });
+        }
     }
 
     @Override
     public void render(float delta) {
+        Gdx.graphics.setTitle("FPS: " + Gdx.graphics.getFramesPerSecond());
+
         engine.update(delta);
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-        renderer.renderProxies(world.getRenderProxies());
+        renderer.render(world.getRenderables());
         outputImg.setDrawable(renderer.getTexture().getTexture());
+        outputImg.setVisible(true);
 
         stage.act(delta);
         stage.draw();

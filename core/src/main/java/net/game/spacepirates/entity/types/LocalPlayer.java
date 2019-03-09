@@ -2,13 +2,20 @@ package net.game.spacepirates.entity.types;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Matrix3;
+import net.game.spacepirates.entity.component.CollisionComponent;
 import net.game.spacepirates.entity.component.InputComponent;
 import net.game.spacepirates.entity.component.ParticleComponent;
+import net.game.spacepirates.entity.component.SceneComponent;
 
 public class LocalPlayer extends Player {
 
     public InputComponent inputComponent;
     public ParticleComponent particleComponent;
+
+    @Override
+    public SceneComponent<?> defaultRootComponent() {
+        return new CollisionComponent("Collision");
+    }
 
     @Override
     public void init() {
@@ -19,8 +26,8 @@ public class LocalPlayer extends Player {
         particleComponent.onInit = (comp, sys) -> {
             sys.bind("u_curve", comp.profile.curve);
             sys.addUniform("u_spawnMatrix", loc -> {
-                Matrix3 matrix3 = transform.worldTransform();
-                matrix3.setToTranslation(transform.translation);
+                Matrix3 matrix3 = getTransform().worldTransform();
+                matrix3.setToTranslation(getTransform().translation);
                 Gdx.gl.glUniformMatrix3fv(loc, 1, false, matrix3.val, 0);
             });
             sys.addUniform("u_initialScale", loc -> {

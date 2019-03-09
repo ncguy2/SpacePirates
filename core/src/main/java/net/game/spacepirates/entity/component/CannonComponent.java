@@ -20,8 +20,8 @@ public class CannonComponent extends SceneComponent<CannonComponent> {
     public void fire() {
         parentEntity.world.addEntity(Projectile.class, e -> {
             Vector2 v = this.transform.worldTranslation();
-            e.transform.translation.set(v);
-            e.transform.rotation = 180;
+            e.getTransform().translation.set(v);
+            e.getTransform().rotation = 180;
         });
         hasFired = true;
     }

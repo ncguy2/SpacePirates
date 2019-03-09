@@ -39,8 +39,8 @@ public class Projectile extends Entity implements IEntityDefinition {
         particleComponent.onInit = (comp, sys) -> {
             sys.bind("u_curve", comp.profile.curve);
             sys.addUniform("u_spawnMatrix", loc -> {
-                Matrix3 matrix3 = transform.worldTransform();
-                matrix3.setToTranslation(transform.worldTranslation());
+                Matrix3 matrix3 = getTransform().worldTransform();
+                matrix3.setToTranslation(getTransform().worldTranslation());
                 Gdx.gl.glUniformMatrix3fv(loc, 1, false, matrix3.val, 0);
             });
             sys.addUniform("u_initialScale", loc -> {
@@ -68,7 +68,6 @@ public class Projectile extends Entity implements IEntityDefinition {
 
     @Override
     public void initTransform() {
-        transform.scale.set(16, 8);
-        transform.rotation = 180;
+        getTransform().rotation = 180;
     }
 }

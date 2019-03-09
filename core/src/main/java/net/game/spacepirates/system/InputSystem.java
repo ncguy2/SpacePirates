@@ -22,15 +22,8 @@ public class InputSystem extends AbstractSystem {
             InputComponent inputComponent = e._get(InputComponent.class);
             VelocityComponent velocityComponent = e._get(VelocityComponent.class);
 
-            float up = inputComponent.keyUp.test() ? 1f : 0f;
-            float down = inputComponent.keyDown.test() ? 1f : 0f;
-            float left = inputComponent.keyLeft.test() ? 1f : 0f;
-            float right = inputComponent.keyRight.test() ? 1f : 0f;
-
-            velocityComponent.direction.x -= left;
-            velocityComponent.direction.x += right;
-            velocityComponent.direction.y += up;
-            velocityComponent.direction.y -= down;
+            velocityComponent.direction.x += inputComponent.axisHorizontal.resolve();
+            velocityComponent.direction.y += inputComponent.axisVertical.resolve();
         });
     }
 

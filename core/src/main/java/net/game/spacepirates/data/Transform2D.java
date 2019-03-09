@@ -39,6 +39,32 @@ public class Transform2D {
         return fromWorldTransform(this);
     }
 
+    public boolean hasParent() {
+        return parent != null;
+    }
+
+    public void adopt(Transform2D child) {
+        if(child.hasParent()) {
+            throw new IllegalStateException("Cannot adopt a non-orphan child");
+        }
+        child.setParent(this);
+    }
+
+    public void release(Transform2D child) {
+        if(!child.hasParent()) {
+            throw new IllegalStateException("Cannot release an orphan");
+        }
+        if(child.getParent() != this) {
+            throw new IllegalStateException("Cannot release a child belonging to a different parent");
+        }
+
+        child.clearParent();
+    }
+
+    private Transform2D getParent() {
+        return parent;
+    }
+
     public Matrix3 update() {
         transformation.idt();
         transformation.translate(translation);
@@ -52,11 +78,8 @@ public class Transform2D {
     }
 
     public Matrix3 worldTransform() {
-        Matrix3 mat = new Matrix3().idt();
-        if(parent != null) {
-            mat.set(parent.worldTransform());
-        }
-        return mat.mulLeft(this.localTransform());
+        Matrix3 mat = getParentTransform();
+        return mat.mul(this.localTransform());
     }
 
     public float rotationRad() {
@@ -96,4 +119,21 @@ public class Transform2D {
     public void clearParent() {
         setParent(null);
     }
+
+    public void setWorldTranslation(Vector2 worldLoc) {
+        translation.set(worldLoc).mul(getParentTransform().inv());
+    }
+
+    public void setWorldRotation(float rotation) {
+        this.rotation = getParentTransform().inv().rotate(rotation).getRotation();
+    }
+
+    public void setWorldRotationRad(float rotationRadians) {
+        this.rotation = getParentTransform().inv().rotateRad(rotationRadians).getRotation();
+    }
+
+    public void setWorldScale(Vector2 worldScale) {
+        scale.set(worldScale).mul(getParentTransform().inv());
+    }
+
 }

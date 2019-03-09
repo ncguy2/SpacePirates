@@ -11,7 +11,7 @@ public class InputAxis {
 
     public float resolve() {
         float value = 0;
-        boolean first = false;
+        boolean first = true;
         for (AxisEntry entry : entries) {
             if (entry.action.test()) {
                 if (rule.equals(CompositionRule.First)) {
@@ -20,9 +20,9 @@ public class InputAxis {
 
                 if (first) {
                     value = entry.scale;
+                    first = false;
                 } else {
                     value = rule.resolve(value, entry.scale);
-                    first = false;
                 }
             }
         }

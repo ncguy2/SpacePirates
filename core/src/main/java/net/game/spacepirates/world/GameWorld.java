@@ -8,7 +8,6 @@ import net.game.spacepirates.entity.component.RenderComponent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -66,14 +65,17 @@ public class GameWorld {
         Gdx.app.postRunnable(() -> removeEntityImmediate(e));
     }
     public boolean removeEntityImmediate(Entity e) {
-        e.components.forEach(c -> c.onRemoveFromEntity(e));
-        e.components.clear();
+        e.rootComponent.components.forEach(c -> c.onRemoveFromEntity(e));
+        e.rootComponent.components.clear();
         return entities.remove(e);
     }
 
     public synchronized void update(float delta) {
         List<Future<?>> futures = new ArrayList<>();
         for (Entity entity : entities) {
+            if(!entity.isEnabled()) {
+                continue;
+            }
             Future<?> submit = executorService.submit(() -> entity.update(delta));
             futures.add(submit);
         }
@@ -83,18 +85,13 @@ public class GameWorld {
         }
     }
 
-    public synchronized List<RenderComponent.RenderProxy> getRenderProxies() {
-        List<RenderComponent.RenderProxy> proxies = new ArrayList<>();
-        entities.stream()
-                .filter(e -> e.has(RenderComponent.class))
-                .map(e -> e.get(RenderComponent.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(r -> r.collectRenderables(proxies));
-        return proxies;
+    public Stream<Entity> getEntitiesWith(Class<? extends EntityComponent>... components) {
+        return this.entities.stream().filter(Entity::isEnabled).filter(e -> e.hasAll(components));
     }
 
-    public Stream<Entity> getEntitiesWith(Class<? extends EntityComponent>... components) {
-        return this.entities.stream().filter(e -> e.hasAll(components));
+    public Stream<RenderComponent> getRenderables() {
+        List<RenderComponent> components = new ArrayList<>();
+        entities.stream().filter(Entity::isEnabled).forEach(e -> components.addAll(e.getAll(RenderComponent.class)));
+        return components.stream();
     }
 }

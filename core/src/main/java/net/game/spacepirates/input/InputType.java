@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import java.util.function.Function;
 
 public enum InputType {
+    Custom(i -> false),
     Keyboard(Gdx.input::isKeyPressed),
     Mouse(Gdx.input::isButtonPressed),
     Scroll(ScrollInputHelper::resolve);

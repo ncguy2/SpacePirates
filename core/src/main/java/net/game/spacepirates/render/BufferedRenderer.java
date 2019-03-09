@@ -2,37 +2,34 @@ package net.game.spacepirates.render;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.utils.Pool;
-import net.game.spacepirates.data.Transform2D;
 import net.game.spacepirates.entity.component.RenderComponent;
 import net.game.spacepirates.input.PostProcessingCamera;
 import net.game.spacepirates.render.post.ParticlePostProcessor;
+import net.game.spacepirates.world.PhysicsWorld;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Stream;
 
 public class BufferedRenderer extends AbstractRenderer {
 
+    public PhysicsWorld physicsWorld;
     public OrthographicCamera worldCamera;
     public SpriteBatch batch;
     public ShaderProgram shader;
     public PostProcessingCamera<OrthographicCamera> ppCamera;
     protected TextureRegion region;
 
-    Pool<Sprite> spritePool = new Pool<Sprite>() {
-        @Override
-        protected Sprite newObject() {
-            return new Sprite();
-        }
-    };
+    public BufferedRenderer setPhysicsWorld(PhysicsWorld physicsWorld) {
+        this.physicsWorld = physicsWorld;
+        return this;
+    }
 
     @Override
     public void init() {
@@ -74,7 +71,12 @@ public class BufferedRenderer extends AbstractRenderer {
     }
 
     @Override
-    public void renderProxies(List<RenderComponent.RenderProxy> proxyList) {
+    public void render(Stream<RenderComponent> renderComponents) {
+
+        RenderContext context = new RenderContext();
+        context.batch = batch;
+        context.camera = worldCamera;
+
         ppCamera.begin();
         ppCamera.clear(Color.BLACK, true, false);
 
@@ -83,31 +85,15 @@ public class BufferedRenderer extends AbstractRenderer {
         batch.enableBlending();
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        List<Sprite> usedSprites = new ArrayList<>();
-
-        for (RenderComponent.RenderProxy proxy : proxyList) {
-            Sprite s = get(proxy.texture);
-            if(s == null) {
-                continue;
-            }
-            usedSprites.add(s);
-            s.getTexture().setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-            s.setColor(proxy.colour);
-            Transform2D transform = proxy.transform;
-            s.setPosition(transform.translation.x, transform.translation.y);
-            s.setRotation(transform.rotation);
-            s.setSize(transform.scale.x, transform.scale.y);
-//            s.setU2(1);
-//            s.setV2(1);
-            s.draw(batch);
-        }
+        renderComponents.forEach(c -> c.draw(context));
 
         batch.end();
 
-        usedSprites.forEach(spritePool::free);
-        usedSprites.clear();
-
         ShapeRenderHost.get().draw(worldCamera.combined);
+
+        if(physicsWorld != null) {
+            physicsWorld.debugRender(worldCamera.combined.cpy());
+        }
 
         ppCamera.end();
 
@@ -115,12 +101,12 @@ public class BufferedRenderer extends AbstractRenderer {
         if((ppCamera.processors.size() & 1) == 1 != region.isFlipY()) {
             region.flip(false, true);
         }
-//        texture = ppCamera.fbo.getColorBufferTexture();
     }
 
     @Override
     public void resize(int width, int height) {
         worldCamera.setToOrtho(false, width, height);
+        ppCamera.resize(width, height);
     }
 
     @Override
@@ -131,6 +117,11 @@ public class BufferedRenderer extends AbstractRenderer {
     @Override
     public TextureRegion getTexture() {
         return region;
+    }
+
+    @Override
+    public Camera getCamera() {
+        return worldCamera;
     }
 
     public Sprite get(TextureRegion reg) {

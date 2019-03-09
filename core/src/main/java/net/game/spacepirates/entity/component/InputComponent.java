@@ -7,11 +7,15 @@ import net.game.spacepirates.input.ScrollInputHelper;
 
 public class InputComponent extends EntityComponent<InputComponent> {
 
-    public InputAction keyUp = InputAction.key("Up", Input.Keys.W);
-    public InputAction keyDown = InputAction.key("Down", Input.Keys.S);
-    public InputAction keyLeft = InputAction.key("Left", Input.Keys.A);
-    public InputAction keyRight = InputAction.key("Right", Input.Keys.D);
     public InputAction keyFire = InputAction.key("Fire", Input.Keys.E);
+
+    public InputAxis axisVertical = InputAxis.create()
+            .add(InputAction.key("Up", Input.Keys.W), 1)
+            .add(InputAction.key("Down", Input.Keys.S), -1);
+
+    public InputAxis axisHorizontal = InputAxis.create()
+            .add(InputAction.key("Left", Input.Keys.A), -1)
+            .add(InputAction.key("Right", Input.Keys.D), 1);
 
     public InputAxis zoomAxis = InputAxis.create()
             .add(InputAction.scroll("Zoom in", ScrollInputHelper.ScrollType.UP), 1)
