@@ -21,12 +21,11 @@ import net.game.spacepirates.system.InputSystem;
 import net.game.spacepirates.system.MovementSystem;
 import net.game.spacepirates.system.ParticleSystem;
 import net.game.spacepirates.world.PhysicsWorld;
+import net.game.spacepirates.world.physics.Physics;
 import net.game.spacepirates.world.physics.workers.SpawnEntityTask;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static net.game.spacepirates.world.PhysicsWorld.SCREEN_TO_WORLD;
 
 public class GameScreen implements Screen {
 
@@ -67,7 +66,7 @@ public class GameScreen implements Screen {
         def.position.set(new Vector2(0, 0));
         FixtureDef fixDef = new FixtureDef();
         fixDef.shape = new CircleShape();
-        fixDef.shape.setRadius(32 * SCREEN_TO_WORLD);
+        fixDef.shape.setRadius(Physics.cm(32));
 
         fixDef.density = 1f;
         fixDef.friction = 1f;
@@ -77,7 +76,7 @@ public class GameScreen implements Screen {
 
         SpawnEntityTask task = new SpawnEntityTask(world.getPhysicsWorld(), def, fixDef);
         LocalPlayer player = world.addEntityImmediate(LocalPlayer.class);
-        player.velocityComponent.speed = 256;
+        player.velocityComponent.speed = Physics.cm(256);
         player.setEnabled(false);
         asyncStartupTaskCounter.incrementAndGet();
         ForkJoinPool.commonPool().execute(() -> {
@@ -95,12 +94,12 @@ public class GameScreen implements Screen {
         Entity floor = world.addEntityImmediate();
         floor.setEnabled(false);
         floor.setRootComponent(new CollisionComponent("Collision"));
-        floor.getTransform().setWorldTranslation(new Vector2(400, 10).scl(SCREEN_TO_WORLD));
+        floor.getTransform().setWorldTranslation(new Vector2(Physics.cm(400), Physics.cm(10)));
         def = new BodyDef();
         def.position.set(new Vector2(0, 0));
         fixDef = new FixtureDef();
         fixDef.shape = new PolygonShape();
-        ((PolygonShape) fixDef.shape).setAsBox(400 * SCREEN_TO_WORLD, 5 * SCREEN_TO_WORLD);
+        ((PolygonShape) fixDef.shape).setAsBox(Physics.cm(400), Physics.cm(5));
         SpawnEntityTask task2 = new SpawnEntityTask(world.getPhysicsWorld(), def, fixDef);
         asyncStartupTaskCounter.incrementAndGet();
         ForkJoinPool.commonPool().execute(() -> {

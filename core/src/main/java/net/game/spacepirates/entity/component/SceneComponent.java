@@ -50,4 +50,12 @@ public class SceneComponent<T extends SceneComponent> extends EntityComponent<T>
     public void onRemoveFromEntity(Entity entity) {
         super.onRemoveFromEntity(entity);
     }
+
+    @Override
+    public void update(float delta) {
+        super.update(delta);
+        for (EntityComponent<?> component : components) {
+            component.update(delta);
+        }
+    }
 }

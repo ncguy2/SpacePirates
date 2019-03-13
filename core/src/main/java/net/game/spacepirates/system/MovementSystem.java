@@ -3,7 +3,6 @@ package net.game.spacepirates.system;
 import net.game.spacepirates.entity.component.CollisionComponent;
 import net.game.spacepirates.entity.component.VelocityComponent;
 import net.game.spacepirates.world.GameWorld;
-import net.game.spacepirates.world.PhysicsWorld;
 
 public class MovementSystem extends AbstractSystem {
 
@@ -23,10 +22,9 @@ public class MovementSystem extends AbstractSystem {
             VelocityComponent vel = e._get(VelocityComponent.class);
             CollisionComponent col = e._get(CollisionComponent.class);
 
-            vel.speed = 512;
-
             if(col.body != null) {
-                col.body.setLinearVelocity(vel.getVelocity().scl(PhysicsWorld.SCREEN_TO_WORLD));
+                col.body.applyLinearImpulse(vel.getVelocity(), col.body.getWorldCenter(), true);
+                col.body.setLinearDamping(25);
             }
             vel.reset();
         });
