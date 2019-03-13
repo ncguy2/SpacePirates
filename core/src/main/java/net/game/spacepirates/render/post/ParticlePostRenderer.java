@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.geometry.InstancedMesh;
-import net.game.spacepirates.particles.ParticleManager;
 import net.game.spacepirates.render.buffer.FBO;
 import net.game.spacepirates.util.ReloadableShaderProgram;
 
@@ -92,42 +91,10 @@ public class ParticlePostRenderer {
 
         shader.program().setUniformMatrix("u_projViewTrans", projection);
 
-        Texture[] boundTexture = new Texture[1];
-
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendEquation(GL30.GL_MAX);
 
         // TODO Render particles
-        ParticleManager.get().systems(sys -> {
-            Texture[] targetTexture = new Texture[1];
-            targetTexture[0] = null;
-            if(sys.renderData.textureRef != null && !sys.renderData.textureRef.isEmpty()) {
-                AssetHandler.instance().GetAsync(sys.renderData.textureRef, Texture.class, t -> targetTexture[0] = t);
-            }
-
-            if(targetTexture[0] == null) {
-                targetTexture[0] = texture;
-            }
-
-            if(targetTexture[0] != boundTexture[0]) {
-                boundTexture[0] = targetTexture[0];
-                boundTexture[0].bind(0);
-                shader.program().setUniformi("u_texture", 0);
-            }
-
-            if(sys.renderData != null) {
-                shader.program().setUniformi("u_alphaChannel", sys.renderData.alphaChannel);
-                shader.program().setUniformf("u_alphaCutoff", sys.renderData.alphaCutoff);
-            }
-
-            sys.bindBuffer(0);
-
-            mesh.instanceCount = sys.desiredAmount;
-
-            mesh.render(shader.program(), GL20.GL_TRIANGLES);
-
-            sys.bindBuffer();
-        });
 
         Gdx.gl.glBlendEquation(GL30.GL_FUNC_ADD);
         shader.program().end();

@@ -1,6 +1,5 @@
 package net.game.spacepirates.system;
 
-import net.game.spacepirates.particles.ParticleManager;
 import net.game.spacepirates.world.GameWorld;
 
 public class ParticleSystem extends AbstractSystem {
@@ -16,7 +15,8 @@ public class ParticleSystem extends AbstractSystem {
 
     @Override
     public void update(float delta) {
-        ParticleManager.get().update(delta);
+        // TODO update
+//        Services.get(ParticleService.class).update(delta);
     }
 
     @Override

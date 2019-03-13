@@ -2,6 +2,7 @@ package net.game.spacepirates.particles;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import net.game.spacepirates.services.Services;
 import net.game.spacepirates.util.ComputeShader;
 import net.game.spacepirates.util.ReloadableComputeShader;
 import net.game.spacepirates.util.ShaderPreprocessor;
@@ -26,7 +27,7 @@ public class ParticleShader extends ReloadableComputeShader {
         map.put(ParticleBlock.Type.Update, new ParticleShader(profile.name + ": Update", handle, new HashMap<>(), register));
 
         for (String block : profile.blocks)
-            ParticleManager.get()
+            Services.get(ParticleService.class)
                     .getParticleBlock(block)
                     .ifPresent(b -> {
                         ParticleShader ps = map.get(b.type);

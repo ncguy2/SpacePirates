@@ -5,8 +5,7 @@ import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.utils.Disposable;
 import org.lwjgl.opengl.GL15;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
+import java.nio.*;
 
 import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
 

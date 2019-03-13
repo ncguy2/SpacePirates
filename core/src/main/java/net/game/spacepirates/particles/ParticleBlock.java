@@ -59,8 +59,7 @@ public class ParticleBlock {
 
     public enum Type {
         Spawn,
-        Update;
-
+        Update
     }
 
 }
