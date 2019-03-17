@@ -12,7 +12,11 @@ import com.strongjoshua.console.GUIConsole;
 import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.cmd.SPCommandExecutor;
 import net.game.spacepirates.input.InputHelper;
+import net.game.spacepirates.particles.ParticleService;
 import net.game.spacepirates.screen.MainMenuScreen;
+import net.game.spacepirates.services.Services;
+
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms.
@@ -24,10 +28,21 @@ public class SpacePiratesLauncher extends Game {
     private Stage globalStage;
     private GUIConsole console;
 
+    protected void initServices() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        Services.registerService(ParticleService.class);
+    }
 
     @Override
     public void create() {
         ShaderProgram.pedantic = false;
+
+
+        try {
+            initServices();
+        } catch (InvocationTargetException | IllegalAccessException | InstantiationException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
         VisUI.load();
         globalCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         globalViewport = new ScreenViewport(globalCamera);

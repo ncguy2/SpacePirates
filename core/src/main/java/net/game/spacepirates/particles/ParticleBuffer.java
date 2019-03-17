@@ -20,4 +20,5 @@ public class ParticleBuffer {
     public ShaderStorageBufferObject getDeadBuffer() {
         return deadBuffer;
     }
+
 }

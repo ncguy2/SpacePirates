@@ -1,6 +1,10 @@
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
+repositories {
+  maven { url 'http://amelentev.github.io/mvnrepo/' }
+}
+
 dependencies {
   compile "com.badlogicgames.gdx:gdx:$gdxVersion"
   compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
@@ -14,7 +18,7 @@ dependencies {
   compile "com.github.czyzby:gdx-websocket:$websocketVersion"
   compile "com.github.czyzby:gdx-websocket-serialization:$websocketSerializationVersion"
 
-  compile "org.lwjgl:lwjgl-opengl:3.2.0"
+  compile "org.lwjgl:lwjgl-opengl:$lwjglVersion"
 
   compile "com.google.code.gson:gson:$gsonVersion"
 }
