@@ -2,14 +2,15 @@ package net.game.spacepirates.particles;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import net.game.spacepirates.particles.system.AbstractParticleSystem;
 import net.game.spacepirates.services.BaseService;
 import net.game.spacepirates.util.buffer.ShaderStorageBufferObject;
 import net.game.spacepirates.util.io.Json;
-import org.lwjgl.opengl.GL15;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -20,11 +21,13 @@ public class ParticleService extends BaseService {
     public static final String PARTICLE_META_EXTENSION = ".json";
     public static final int MAX_PARTICLE_COUNT = 1_000_000;
 
-    private final List<Integer> issuedIndices = new ArrayList<>();
     private final List<ParticleBlock> blockRegistry = new ArrayList<>();
     private final Set<ParticleProfile> profiles = new HashSet<>();
 
+    private final Map<AbstractParticleSystem, List<Integer>> allocationMap = new HashMap<>();
+
     private ParticleBuffer buffer;
+    private float globalLife;
 
     public ParticleService() {
         registerDefaultParticleBlocks();
@@ -32,8 +35,16 @@ public class ParticleService extends BaseService {
         buffer = new ParticleBuffer(MAX_PARTICLE_COUNT);
     }
 
+    public float getGlobalLife() {
+        return globalLife;
+    }
+
     public void registerParticleBlock(ParticleBlock block) {
         blockRegistry.add(block);
+    }
+
+    public ParticleBuffer getBuffer() {
+        return buffer;
     }
 
     public Optional<ParticleBlock> getParticleBlock(String name) {
@@ -52,12 +63,12 @@ public class ParticleService extends BaseService {
                        .findFirst();
     }
 
-    public synchronized int[] issueIndices(int amount) {
-        int[] ints = IntStream.range(Integer.MIN_VALUE, Integer.MAX_VALUE)
+    public synchronized int[] issueIndices(int amount, AbstractParticleSystem system) {
+        int[] ints = IntStream.range(0, Integer.MAX_VALUE)
                               .filter(this::isIndexFree)
                               .limit(amount)
                               .toArray();
-        addIssuedIndices(ints);
+        addIssuedIndices(system, ints);
         return ints;
     }
 
@@ -74,32 +85,31 @@ public class ParticleService extends BaseService {
         byte[] bytes;
 
         ShaderStorageBufferObject deadBuffer = buffer.getDeadBuffer();
-        ByteBuffer map = deadBuffer.map(GL15.GL_READ_WRITE);
-        try {
+        ByteBuffer map = deadBuffer.getData();
+        map.position(0);
+
+        amount = map.getInt(0);
+
+        if (amount == 0) {
             map.position(0);
-
-            amount = map.getInt(0);
-
-            if (amount == 0) {
-                map.position(0);
-                return new int[0];
-            }
-
-            bytes = new byte[amount * Integer.BYTES];
-            map.position(Integer.BYTES);
-            map.get(bytes);
-
-            map.putInt(0, 0);
-        } finally {
-            // The buffer must always be unmapped after use
-            deadBuffer.unmap();
+            return new int[0];
         }
 
+        bytes = new byte[amount * Integer.BYTES];
+        map.position(Integer.BYTES);
+        map.get(bytes);
+
+        map.putInt(0, 0);
+        map.position(0);
+
+        deadBuffer.setData(map);
+
         int[] indices = new int[amount];
+
         byte[] tmpArr = new byte[Integer.BYTES];
         for (int i = 0; i < bytes.length; i += Integer.BYTES) {
             System.arraycopy(bytes, i, tmpArr, 0, Integer.BYTES);
-            indices[i] = ByteBuffer.wrap(tmpArr).getInt();
+            indices[i / Integer.BYTES] = ByteBuffer.wrap(tmpArr).getInt();
         }
 
         return indices;
@@ -115,14 +125,31 @@ public class ParticleService extends BaseService {
         return ParticleService.class;
     }
 
+    public Optional<AbstractParticleSystem> buildSystem(ParticleProfile profile) {
+        return Optional.ofNullable(profile.create(buffer));
+    }
+
+    public void update(float delta) {
+        globalLife += delta;
+        releaseDeadIndices();
+    }
+
+    public void release(AbstractParticleSystem system, int[] indices) {
+        Arrays.stream(indices)
+              .boxed()
+              .forEach(getInts(system)::remove);
+    }
+
     protected void registerDefaultParticleBlocks() {
-        getDefaults(PARTICLE_BLOCK_PATH, s -> s.endsWith(PARTICLE_META_EXTENSION)).map(s -> Json.from(s, ParticleBlock.class))
-                                                                                  .forEach(this::registerParticleBlock);
+        getDefaults(PARTICLE_BLOCK_PATH, s -> s.endsWith(PARTICLE_META_EXTENSION))
+                .map(s -> Json.from(s, ParticleBlock.class))
+                .forEach(this::registerParticleBlock);
     }
 
     protected void registerDefaultProfiles() {
-        getDefaults(PARTICLE_PROFILE_PATH, s -> s.endsWith(PARTICLE_META_EXTENSION)).map(s -> Json.from(s, ParticleProfile.class))
-                                                                                    .forEach(this::registerProfile);
+        getDefaults(PARTICLE_PROFILE_PATH, s -> s.endsWith(PARTICLE_META_EXTENSION))
+                .map(s -> Json.from(s, ParticleProfile.class))
+                .forEach(this::registerProfile);
     }
 
     protected Stream<String> getDefaults(String root, Predicate<String> fileFilter) {
@@ -144,15 +171,44 @@ public class ParticleService extends BaseService {
         return !isIndexIssued(idx);
     }
 
-    private void addIssuedIndices(int... indices) {
-        Arrays.stream(indices).forEach(issuedIndices::add);
+    private void addIssuedIndices(AbstractParticleSystem sys, int... indices) {
+        List<Integer> ints = getInts(sys);
+        Arrays.stream(indices).forEach(ints::add);
+    }
+
+    public List<Integer> getInts(AbstractParticleSystem sys) {
+        if(!allocationMap.containsKey(sys)) {
+            allocationMap.put(sys, new ArrayList<>());
+        }
+        return allocationMap.get(sys);
+    }
+
+    public Set<AbstractParticleSystem> getKeys() {
+        allocationMap.keySet()
+                     .stream()
+                     .filter(s -> allocationMap.get(s).isEmpty())
+                     .collect(Collectors.toList())
+                     .forEach(allocationMap::remove);
+        return allocationMap.keySet();
     }
 
     private boolean isIndexIssued(int idx) {
-        return issuedIndices.contains(idx);
+        for (AbstractParticleSystem key : getKeys()) {
+            if(getInts(key).contains(idx)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void releaseIndices(int... indices) {
-        Arrays.stream(indices).forEach(issuedIndices::remove);
+
+        System.out.println("Releasing dead indices, found " + indices.length);
+
+        List<Integer> indexList = IntStream.of(indices)
+                                           .boxed()
+                                           .collect(Collectors.toList());
+        allocationMap.values().forEach(l -> l.removeAll(indexList));
     }
 }

@@ -2,13 +2,14 @@ package net.game.spacepirates.particles;
 
 import com.badlogic.gdx.math.Vector2;
 import net.game.spacepirates.particles.system.AbstractParticleSystem;
+import net.game.spacepirates.particles.system.ParticleSystemType;
 import net.game.spacepirates.util.curve.GLColourCurve;
 
 public class ParticleProfile {
 
     public String name;
 
-    public SystemType type;
+    public ParticleSystemType type;
 
     public String[] blocks;
 
@@ -27,8 +28,8 @@ public class ParticleProfile {
     public int maskChannel;
     public Vector2 size;
 
-    public AbstractParticleSystem create() {
-        return type.create(this);
+    public AbstractParticleSystem create(ParticleBuffer buffer) {
+        return type.create(this, buffer);
     }
 
 }

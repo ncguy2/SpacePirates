@@ -33,7 +33,9 @@ public class ReloadableShaderProgram extends ReloadableShader<ShaderProgram> {
         System.out.println("Creating shader: " + name());
         String vert = ShaderPreprocessor.ReadShader(this.vertexShader, macroParams);
         String frag = ShaderPreprocessor.ReadShader(this.fragmentShader, macroParams);
-        return new ShaderProgram(vert, frag);
+        ShaderProgram shaderProgram = new ShaderProgram(vert, frag);
+        System.out.println(shaderProgram.getLog());
+        return shaderProgram;
     }
 
     @Override

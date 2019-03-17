@@ -110,7 +110,6 @@ public class GameScreen implements Screen {
             check();
         });
 
-
         renderer = new BufferedRenderer().setPhysicsWorld(world);
         renderer.init();
 

@@ -1,0 +1,42 @@
+{
+  "name": "Heal",
+  "type": "Temporal",
+  "blocks": [
+    "Lifecycle",
+    "Triangle Vector Field",
+    "Follow Colour Curve",
+    "Follow Velocity",
+    "Initial State",
+    "Circle boundary spawn",
+    "Shrink Over Time",
+    "Transform Position"
+  ],
+  "curve": {
+    "items": [
+      {
+        "item": [
+          0.0,
+          0.6,
+          0.0,
+          1.0
+        ],
+        "value": 0.0
+      },
+      {
+        "item": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": 3.0
+      }
+    ],
+    "min": 0.0,
+    "max": 3.0
+  },
+  "loopingBehaviour": "Forever",
+  "duration": 3.0,
+  "particleCount": 8192,
+  "spawnOverTime": 3.0
+}
