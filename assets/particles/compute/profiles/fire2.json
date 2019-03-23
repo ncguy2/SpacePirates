@@ -1,0 +1,45 @@
+{
+  "name": "Fire 2",
+  "type": "Temporal",
+  "blocks": [
+    "Lifecycle",
+    "Orbit",
+    "Triangle Vector Field",
+    "Follow Colour Curve",
+    "Follow Velocity",
+    "Initial State",
+    "Circle boundary spawn",
+    "Transform Position"
+  ],
+  "curve": {
+    "items": [
+      {
+        "item": "#00000000",
+        "value": 0.0
+      },
+      {
+        "item": "#c028f8FF",
+        "value": 0.25
+      },
+      {
+        "item": [
+          1.0,
+          1.0,
+          1.0,
+          0.5
+        ],
+        "value": 3.75
+      },
+      {
+        "item": "#FFFFFF00",
+        "value": 5.0
+      }
+    ],
+    "min": 0.0,
+    "max": 5.0
+  },
+  "loopingBehaviour": "Forever",
+  "duration": 5.0,
+  "particleCount": 4096,
+  "spawnOverTime": 5.0
+}

@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.badlogic.gdx.graphics.GL30.GL_DRAW_FRAMEBUFFER;
+import static com.badlogic.gdx.graphics.GL30.GL_READ_FRAMEBUFFER;
+
 public class FBO implements Disposable, IStackableFBO {
 
     private final Builder builder;
@@ -32,10 +35,12 @@ public class FBO implements Disposable, IStackableFBO {
     public FBO(Pixmap.Format format, int width, int height, boolean hasDepth, boolean hasStencil) {
         builder = new Builder(width, height);
         builder.addBasicColorTextureAttachment(format);
-        if(hasDepth) {
+
+        if (hasDepth && hasStencil) {
+            builder.addBasicStencilDepthPackedRenderBuffer();
+        } else if (hasDepth) {
             builder.addBasicDepthRenderBuffer();
-        }
-        if(hasStencil) {
+        } else if (hasStencil) {
             builder.addBasicStencilRenderBuffer();
         }
         build();
@@ -62,7 +67,7 @@ public class FBO implements Disposable, IStackableFBO {
         List<Texture> texArr = new ArrayList<>();
         getTextures().ifPresent(texs -> {
             for (Texture tex : texs) {
-                if(tex != null) {
+                if (tex != null) {
                     texArr.add(tex);
                 }
             }
@@ -83,12 +88,12 @@ public class FBO implements Disposable, IStackableFBO {
     }
 
     public FBO resize(int width, int height) {
-        if(width <= 0 || height <= 0) {
+        if (width <= 0 || height <= 0) {
             return this;
         }
 
-        if(buffer != null) {
-            if(width == buffer.getWidth() && height == buffer.getHeight()) {
+        if (buffer != null) {
+            if (width == buffer.getWidth() && height == buffer.getHeight()) {
                 return this;
             }
 
@@ -99,6 +104,27 @@ public class FBO implements Disposable, IStackableFBO {
         builder.resize(width, height);
         buffer = builder.build();
         return this;
+    }
+
+    /**
+     *
+     * @param target The blit target fbo
+     * @param mask The bitwise OR of the flags indicating which buffers are to be copied. The allowed flags are {@code GL_COLOR_BUFFER_BIT}, {@code GL_DEPTH_BUFFER_BIT} and {@code GL_STENCIL_BUFFER_BIT}.
+     * @param filter Specifies the interpolation to be applied if the image is stretched. Must be {@code GL_NEAREST} or {@code GL_LINEAR}.
+     */
+    public void blit(FBO target, int mask, int filter) {
+        Gdx.gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, this.getFramebufferHandle());
+        Gdx.gl.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.getFramebufferHandle());
+
+        Gdx.gl30.glBlitFramebuffer(0, 0, width(), height(), 0, 0, target.width(), target.height(), mask, filter);
+
+        Gdx.gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        Gdx.gl.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
+
+
+    public int getFramebufferHandle() {
+        return buffer.getFramebufferHandle();
     }
 
     public void begin() {
@@ -120,7 +146,7 @@ public class FBO implements Disposable, IStackableFBO {
 
     @Override
     public void dispose() {
-        if(buffer != null) {
+        if (buffer != null) {
             buffer.dispose();
             buffer = null;
         }

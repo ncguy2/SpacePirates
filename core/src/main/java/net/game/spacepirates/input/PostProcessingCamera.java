@@ -1,9 +1,7 @@
 package net.game.spacepirates.input;
 
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Quaternion;
@@ -12,6 +10,8 @@ import com.badlogic.gdx.math.collision.Ray;
 import net.game.spacepirates.render.buffer.FBO;
 import net.game.spacepirates.render.buffer.FBOFactory;
 import net.game.spacepirates.render.post.AbstractPostProcessor;
+import net.game.spacepirates.render.post.ParticlePostProcessor;
+import net.game.spacepirates.render.post.PostProcessorContext;
 
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
@@ -23,6 +23,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PostProcessingCamera<CAMERA extends Camera> {
+
+    public static List<String> texturesToRender = new ArrayList<>();
+    static {
+        texturesToRender.add("texture.diffuse");
+        texturesToRender.add(ParticlePostProcessor.PARTICLE_TEXTURE_NAME);
+    }
 
     public static List<WeakReference<PostProcessingCamera>> cameraRefs = new ArrayList<>();
     private static void _register(PostProcessingCamera camera) {
@@ -41,6 +47,7 @@ public class PostProcessingCamera<CAMERA extends Camera> {
     public Texture[] postProcessedTextures;
 
     public PostProcessingCamera(CAMERA camera, AbstractPostProcessor... processors) {
+
 
         for (AbstractPostProcessor processor : processors) {
             processor.init();
@@ -71,7 +78,7 @@ public class PostProcessingCamera<CAMERA extends Camera> {
         forEach(p -> p.resize(width, height));
     }
 
-    public Texture[] process(SpriteBatch batch, float delta) {
+    public PostProcessorContext process(SpriteBatch batch, float delta) {
         postProcessedTextures = fbo.getTextures().orElse(new Texture[0]);
 
         if(batch.isDrawing()) {
@@ -79,18 +86,34 @@ public class PostProcessingCamera<CAMERA extends Camera> {
             batch.end();
         }
 
-        forEach(p -> postProcessedTextures = p.render(batch, camera, postProcessedTextures, delta));
-        return postProcessedTextures;
+        String[] names = new String[] {
+                "texture.diffuse",
+                "texture.normal",
+                "texture.emissive",
+                "texture.metadata",
+        };
+
+        PostProcessorContext ctx = new PostProcessorContext(batch, camera, delta);
+        ctx.depthBufferHandle = fbo.getDepthBufferHandle();
+        for (int i = 0; i < postProcessedTextures.length; i++) {
+            ctx.addTexture(postProcessedTextures[i], names[i]);
+        }
+
+        forEach(p -> p.render(ctx));
+        return ctx;
     }
 
-    public Texture flatten(SpriteBatch batch, Texture... textures) {
+    public Texture flatten(SpriteBatch batch, PostProcessorContext context) {
         flattenFbo.begin();
-        flattenFbo.clear(Color.BLACK, false, false);
+        flattenFbo.clear(Color.BLACK, true, true);
         batch.setShader(null);
         batch.setProjectionMatrix(new Matrix4().setToOrtho2D(0, 0, flattenFbo.width(), flattenFbo.height()));
         batch.begin();
-        for (int i = 0; i < textures.length; i++) {
-            batch.draw(textures[i], 0, 0, flattenFbo.width(), flattenFbo.height());
+
+        for (Map.Entry<String, Texture> entry : context.namedTextures.entrySet()) {
+            if(texturesToRender.contains(entry.getKey())) {
+                batch.draw(entry.getValue(), 0, 0, flattenFbo.width(), flattenFbo.height());
+            }
         }
         batch.end();
         flattenFbo.end();

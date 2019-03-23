@@ -117,11 +117,7 @@ public class ShaderPreprocessor {
         Include(sb, currentPath, includePath, new HashMap<>());
     }
     public static void Include(StringBuilder sb, String currentPath, String includePath, Map<String, String> macroParams) {
-        String path = includePath;
-        if(!path.startsWith("/")) {
-            path = currentPath + path;
-        }else
-            path = path.substring(1);
+        String path = resolve(currentPath, includePath);
         FileHandle handle = Gdx.files.internal(path);
         sb.append("// ").append(path).append("\n");
         if(handle.exists()) {
@@ -130,9 +126,20 @@ public class ShaderPreprocessor {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }else {
+        } else {
             sb.append("// Not found\n");
+            System.err.println(path + " not found");
         }
+    }
+
+    public static String resolve(String currentPath, String includePath) {
+        String path = includePath;
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        } else {
+            path = currentPath + path;
+        }
+        return path;
     }
 
     public static class ShaderInjectionBlock {

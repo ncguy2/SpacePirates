@@ -24,9 +24,16 @@ uint particleId;
 float delta;
 
 #pragma include("/particles/includes/particle.glsl")
-#pragma include("/particles/includes/noise.glsl")
+#pragma include("/particles/includes/colourCurve.glsl")
 
-//#pragma include("includes/colourCurve.glsl")
+#pragma inject("imports")
+
+vec2 rotate(vec2 v, float a) {
+    float s = sin(a);
+    float c = cos(a);
+    mat2 m = mat2(c, -s, s, c);
+    return m * v;
+}
 
 highp float rand(vec2 co) {
     highp float a = 12.9898;
@@ -72,12 +79,11 @@ void main() {
     rngSeed += int(particleId);
     ParticleData datum = Data[particleId];
 
-
     #pragma inject("invocations")
 
-    if(datum.Life < 0) {
+    if(datum.Alive && datum.Life < 0) {
         datum.Alive = false;
-        uint idx = atomicAdd(Dead_CurrentIndex, 1);
+        uint idx = atomicCounterIncrement(deadBufferCounter);
         Dead_Indices[idx] = particleId;
     }
 

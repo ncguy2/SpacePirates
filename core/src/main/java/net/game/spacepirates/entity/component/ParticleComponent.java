@@ -26,7 +26,6 @@ public class ParticleComponent extends SceneComponent<ParticleComponent> {
     public BiConsumer<ParticleComponent, AbstractParticleSystem> onInit;
     public Consumer<ParticleComponent> onFinish;
 
-
     @Override
     public void update(float delta) {
         if (profile == null || !profile.name.equalsIgnoreCase(systemName)) {

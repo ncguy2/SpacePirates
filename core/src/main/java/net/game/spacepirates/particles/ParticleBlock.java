@@ -9,11 +9,20 @@ public class ParticleBlock {
     public String name;
     public Type type;
     public String datumKey;
+    public String description;
+    public String[] imports;
     public String[] uniforms;
     public String[] fragment;
 
     public String datumKey() {
         return datumKey;
+    }
+
+    public String[] getImports() {
+        if(imports == null) {
+            imports = new String[0];
+        }
+        return imports;
     }
 
     public String getUniforms() {
@@ -49,6 +58,11 @@ public class ParticleBlock {
             sb.append(linePrefix).append(s).append("\n");
         }
         String s = sb.toString();
+
+        if(s.isEmpty()) {
+            return "// NOOP";
+        }
+
         return s.substring(0, s.lastIndexOf('\n'));
     }
 

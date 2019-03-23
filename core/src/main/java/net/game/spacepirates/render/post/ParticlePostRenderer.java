@@ -2,27 +2,28 @@ package net.game.spacepirates.render.post;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.geometry.InstancedMesh;
 import net.game.spacepirates.particles.ParticleService;
 import net.game.spacepirates.render.buffer.FBO;
 import net.game.spacepirates.services.Services;
+import net.game.spacepirates.util.ArrayUtils;
 import net.game.spacepirates.util.ReloadableShaderProgram;
 import net.game.spacepirates.util.buffer.ShaderStorageBufferObject;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import static com.badlogic.gdx.graphics.GL20.GL_INCR;
 
 public class ParticlePostRenderer {
 
     public static final Color COLOUR = new Color(0, 0, 0, 0);
     protected FBO fbo;
-    protected SpriteBatch spriteBatch;
 
+    protected ShaderStorageBufferObject globalIndexBuffer;
     protected ReloadableShaderProgram shader;
     protected Texture texture;
     protected InstancedMesh mesh;
@@ -30,6 +31,9 @@ public class ParticlePostRenderer {
     public ParticlePostRenderer() {
         Map<String, String> params = new HashMap<>();
         params.put("p_BindingPoint", "0");
+
+        globalIndexBuffer = new ShaderStorageBufferObject(Integer.BYTES);
+        globalIndexBuffer.init();
 
         shader = new ReloadableShaderProgram("Particle Renderer", Gdx.files.internal("particles/render/particle.vert"), Gdx.files.internal("particles/render/particle.frag"), params);
 //        AssetHandler.instance().GetAsync("textures/particle/default.png", Texture.class, t -> texture = t);
@@ -50,41 +54,22 @@ public class ParticlePostRenderer {
         });
     }
 
-    public SpriteBatch getBatch() {
-        if (spriteBatch == null) {
-            spriteBatch = new SpriteBatch();
-        }
-        return spriteBatch;
-    }
-
     public FBO getFbo() {
         return getFbo(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     public FBO getFbo(int width, int height) {
         if (fbo == null) {
-            fbo = new FBO(Pixmap.Format.RGBA8888, width, height, true);
+            fbo = new FBO(Pixmap.Format.RGBA8888, width, height, true, true);
         }
         fbo.resize(width, height);
         return fbo;
     }
 
     public Texture renderToTexture(Matrix4 projection) {
-        return renderToTexture(null, projection);
-    }
-
-    public Texture renderToTexture(Texture base, Matrix4 projection) {
         FBO fbo = getFbo();
         fbo.begin();
-        fbo.clear(COLOUR, true, false);
-
-        if(base != null) {
-            SpriteBatch batch = getBatch();
-            batch.setProjectionMatrix(projection);
-            batch.setShader(null);
-            batch.draw(base, 0, 0, fbo.width(), fbo.height());
-            batch.end();
-        }
+        fbo.clear(COLOUR, true, true);
 
         render(projection);
 
@@ -107,24 +92,26 @@ public class ParticlePostRenderer {
         shader.program().setUniformMatrix("u_projViewTrans", projection);
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendEquation(GL30.GL_MAX);
+        Gdx.gl.glBlendEquation(GL30.GL_FUNC_ADD);
 
-        // TODO Render particles
-        particleService.getKeys().forEach(key -> {
-            List<Integer> indices = particleService.getInts(key);
-            mesh.instanceCount = indices.size();
-            ShaderStorageBufferObject buffer = key.getIndexBuffer();
+        Gdx.gl.glEnable(GL20.GL_STENCIL_TEST);
+        Gdx.gl.glStencilMask(0xFF); // each bit is written to the stencil buffer as is
+        Gdx.gl.glStencilFunc(GL20.GL_ALWAYS, 1, 0xFF);
+        Gdx.gl.glStencilOp(GL_INCR, GL_INCR, GL_INCR);
 
-            ByteBuffer b = ByteBuffer.allocate(indices.size() * Integer.BYTES);
-            indices.stream().sorted().forEach(b::putInt);
-            b.position(0);
-            buffer.setData(b);
+        int[] allInts = particleService.getAllInts();
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(allInts.length * Integer.BYTES);
+        for (int allInt : allInts) {
+            byte[] bytes = ArrayUtils.intToGLArr(allInt);
+            byteBuffer.put(bytes);
+        }
+        byteBuffer.position(0);
+        globalIndexBuffer.setData(byteBuffer);
 
-            buffer.bind(4);
+        globalIndexBuffer.bind(4);
 
-            mesh.render(shader.program(), GL20.GL_TRIANGLES);
-            buffer.unbind();
-        });
+        mesh.instanceCount = allInts.length;
+        mesh.render(shader.program(), GL20.GL_TRIANGLES);
 
         Gdx.gl.glBlendEquation(GL30.GL_FUNC_ADD);
         shader.program().end();

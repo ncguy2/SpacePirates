@@ -28,9 +28,11 @@ layout(std430, binding = 0) buffer Particles {
 
 #ifndef EXCLUDE_DEAD_BUFFER
 layout(std430, binding = 1) buffer DeadList {
-    uint Dead_CurrentIndex;
     uint Dead_Indices[];
 };
+
+layout(binding = 5, offset = 0) uniform atomic_uint deadBufferCounter;
+
 #endif
 
 #ifndef EXCLUDE_INDEX_BUFFER

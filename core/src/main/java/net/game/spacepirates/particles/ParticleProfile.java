@@ -32,4 +32,8 @@ public class ParticleProfile {
         return type.create(this, buffer);
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
 }

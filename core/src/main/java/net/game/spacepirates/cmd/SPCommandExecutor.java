@@ -4,6 +4,7 @@ import com.badlogic.gdx.Screen;
 import com.strongjoshua.console.CommandExecutor;
 import com.strongjoshua.console.HiddenCommand;
 import net.game.spacepirates.SpacePiratesLauncher;
+import net.game.spacepirates.input.PostProcessingCamera;
 import net.game.spacepirates.screen.GameScreen;
 
 import java.lang.reflect.Constructor;
@@ -15,6 +16,14 @@ public class SPCommandExecutor extends CommandExecutor {
 
     public SPCommandExecutor(SpacePiratesLauncher spacePiratesLauncher) {
         this.spacePiratesLauncher = spacePiratesLauncher;
+    }
+
+    public void toggle(String textureRef) {
+        if(PostProcessingCamera.texturesToRender.contains(textureRef)) {
+            PostProcessingCamera.texturesToRender.remove(textureRef);
+        }else{
+            PostProcessingCamera.texturesToRender.add(textureRef);
+        }
     }
 
     public void screen(String screenName) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {

@@ -1,0 +1,17 @@
+{
+  "name": "Orbit",
+  "type": "Update",
+  "datumKey": "datum",
+  "uniforms": [
+    "vec2 u_origin = vec2(0.0)",
+    "float u_directionScale = 1",
+    "float u_speedScale = 1",
+    "bool u_transformOrigin = true"
+  ],
+  "fragment": [
+    "vec2 origin = u_origin;",
+    "vec2 dir = normalize(datum.Position - origin);",
+    "dir = rotate(dir, radians(90.0 * u_directionScale));",
+    "datum.Velocity += (dir * u_speedScale) * u_delta;"
+  ]
+}

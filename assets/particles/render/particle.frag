@@ -10,6 +10,7 @@ in flat ParticleData datum;
 in vec2 TexCoords;
 uniform sampler2D u_texture;
 uniform float u_alphaCutoff = 0.25;
+uniform float u_intensity = 16;
 uniform int u_alphaChannel = 3;
 
 void main() {
@@ -28,6 +29,8 @@ void main() {
     if(col.a <= u_alphaCutoff) {
         discard;
     }
+
+    col.rgb *= u_intensity;
 
 	FinalColour = col;
 }
