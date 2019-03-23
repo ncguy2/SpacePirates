@@ -1,6 +1,7 @@
 package net.game.spacepirates.entity;
 
 import net.game.spacepirates.data.Transform2D;
+import net.game.spacepirates.data.messaging.MessageBus;
 import net.game.spacepirates.entity.component.EntityComponent;
 import net.game.spacepirates.entity.component.SceneComponent;
 import net.game.spacepirates.util.EntityUtils;
@@ -19,6 +20,7 @@ public class Entity {
 
     public Entity() {
         rootComponent = defaultRootComponent();
+        MessageBus.get().dispatch(EntityTopics.ENTITY_CREATED, this);
     }
 
     public Transform2D getTransform() {
@@ -37,16 +39,19 @@ public class Entity {
         return new SceneComponent<>("Root");
     }
 
-    public void setRootComponent(SceneComponent<?> rootComponent) {
+    public <T extends SceneComponent<T>> T setRootComponent(T rootComponent) {
         if (this.rootComponent != null) {
-            this.rootComponent.onRemoveFromEntity(this);
+            this.rootComponent.setRoot(null);
+            this.rootComponent.onRemoveFromParent();
         }
 
         this.rootComponent = rootComponent;
 
         if (this.rootComponent != null) {
-            this.rootComponent.onAddToEntity(this);
+            this.rootComponent.setRoot(this);
         }
+
+        return rootComponent;
     }
 
     public void setWorld(GameWorld world) {
@@ -55,13 +60,11 @@ public class Entity {
 
     public <T extends EntityComponent> T addComponent(T component) {
         rootComponent.addComponent(component);
-        component.onAddToEntity(this);
         return component;
     }
 
     public <T extends EntityComponent> T removeComponent(T component) {
         rootComponent.removeComponent(component);
-        component.onRemoveFromEntity(this);
         return component;
     }
 
@@ -93,4 +96,16 @@ public class Entity {
         }
         return true;
     }
+
+    public void destroy() {
+        world.removeEntity(this);
+    }
+
+    public interface EntityTopics {
+
+        String ENTITY_CREATED = "world.entity.created";
+        String ENTITY_DESTROYED = "world.entity.destroyed";
+
+    }
+
 }

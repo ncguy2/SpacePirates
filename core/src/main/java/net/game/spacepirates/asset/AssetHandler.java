@@ -39,14 +39,14 @@ public class AssetHandler implements Disposable {
     }
 
     public static void Start() {
-        instance();
+        get();
     }
 
     public static void Dispose() {
         WithInstanceIfExists(AssetHandler::dispose);
     }
 
-    public static AssetHandler instance() {
+    public static AssetHandler get() {
         if (instance == null)
             instance = new AssetHandler();
         return instance;
@@ -162,6 +162,7 @@ public class AssetHandler implements Disposable {
                 manager.load(path, Texture.class, p);
             } else manager.load(path, type);
         }
+        asyncRequests.put(path, func);
     }
 
     public <T> List<T> GetOfType(Class<T> type) {

@@ -1,6 +1,6 @@
 package net.game.spacepirates.entity.component;
 
-public class TimedDeathComponent extends EntityComponent<TimedDeathComponent> {
+public class TimedDeathComponent extends SceneComponent<TimedDeathComponent> {
 
     public float lifeRemaining;
 
@@ -14,7 +14,7 @@ public class TimedDeathComponent extends EntityComponent<TimedDeathComponent> {
         lifeRemaining -= delta;
 
         if(lifeRemaining <= 0) {
-            parentEntity.world.removeEntity(parentEntity);
+            destroy();
         }
 
     }

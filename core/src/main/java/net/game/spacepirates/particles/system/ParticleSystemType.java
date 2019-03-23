@@ -9,7 +9,7 @@ public enum ParticleSystemType {
     Burst(BurstParticleSystem.class, BurstParticleSystem::new),
     Temporal(TemporalParticleSystem.class, TemporalParticleSystem::new),
 //    TexturedBurst(TexturedBurstParticleSystem.class, TexturedBurstParticleSystem::new),
-//    TexturedTemporal(TexturedTemporalParticleSystem.class, TexturedTemporalParticleSystem::new),
+    TexturedTemporal(TexturedTemporalParticleSystem.class, TexturedTemporalParticleSystem::new),
     ;
 
     public final Class<? extends AbstractParticleSystem> type;

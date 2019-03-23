@@ -4,6 +4,7 @@
 
 layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec2 a_texCoord0;
+layout (location = 2) in int a_id;
 
 #define EXCLUDE_DEAD_BUFFER
 #pragma include("/particles/includes/particle.glsl")
@@ -17,7 +18,7 @@ out vec2 TexCoords;
 void main() {
     TexCoords = a_texCoord0;
 
-    ParticleData d = Data[Idx_Indices[gl_InstanceID]];
+    ParticleData d = Data[Idx_Indices[a_id]];
 
     if(!d.Alive) {
         // Put vertex outside clip-space

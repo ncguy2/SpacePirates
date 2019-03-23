@@ -5,6 +5,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix3;
+import net.game.spacepirates.data.messaging.MessageBus;
 import net.game.spacepirates.particles.*;
 import net.game.spacepirates.services.Services;
 import net.game.spacepirates.util.ArrayUtils;
@@ -28,6 +29,9 @@ public abstract class AbstractParticleSystem {
 
     protected boolean spawnerEnabled = true;
     protected boolean simulationEnabled = true;
+    protected boolean isFinishing = false;
+
+    protected boolean isFinished = false;
 
     protected ParticleProfile profile;
     protected ParticleBuffer buffer;
@@ -128,6 +132,21 @@ public abstract class AbstractParticleSystem {
 
     public void updateSystem(float delta) {
         updateIndexBuffer();
+        if(isFinishing) {
+            checkFinishState();
+        }
+    }
+
+    protected void checkFinishState() {
+        int[] indices = getIndices();
+        if(indices.length > 0) {
+            // Still simulating
+            return;
+        }
+
+        setSimulationEnabled(false);
+        isFinished = true;
+        MessageBus.get().dispatch(ParticleService.MessageTopics.SYSTEM_FINISHED, this);
     }
 
     public abstract boolean canStillSpawn();
@@ -158,6 +177,7 @@ public abstract class AbstractParticleSystem {
         program.bindSSBO(2, indexBuffer);
 
         setCommonUniforms(indices, program, Gdx.graphics.getDeltaTime());
+        setSpawnUniforms(program);
 
         program.dispatch(amount);
         program.waitForCompletion();
@@ -189,6 +209,7 @@ public abstract class AbstractParticleSystem {
 
         program.bind();
         setCommonUniforms(Services.get(ParticleService.class).getInts(this).stream().mapToInt(i -> i).toArray(), program, delta);
+        setUpdateUniforms(program);
         program.bindSSBO(2, getIndexBuffer());
 
         program.dispatch(indices.length);
@@ -227,6 +248,9 @@ public abstract class AbstractParticleSystem {
 
         buffer.getDeadBufferCounter().bind(5);
     }
+
+    public void setSpawnUniforms(ComputeShader program) {}
+    public void setUpdateUniforms(ComputeShader program) {}
 
     public void bind(String uniform, GLColourCurve curve) {
         List<Curve.Item<Color>> items = curve.items;
@@ -272,8 +296,20 @@ public abstract class AbstractParticleSystem {
         }
     }
 
-    public void doFinish() {
+    public <T extends AbstractParticleSystem> void as(Class<T> type, Consumer<T> task) {
+        if(type.isInstance(this)) {
+            task.accept(type.cast(this));
+        }
+    }
 
+    public void doFinish() {
+        isFinishing = true;
+        setSpawnerEnabled(false);
+        setSimulationEnabled(true);
+    }
+
+    public boolean isFinished() {
+        return isFinished;
     }
 
     public void nextLoop() {

@@ -5,7 +5,6 @@
     "Lifecycle",
     "Triangle Vector Field",
     "Global Wind",
-    "Follow Colour Curve",
     "Follow Velocity",
     "Initial State",
     "Texture Spawn",
@@ -41,9 +40,9 @@
     "y": 512
   },
   "texturePath": "textures/swiss2.jpg",
-  "maskChannel": 0,
+  "maskChannel": 3,
   "loopingBehaviour": "Forever",
   "duration": 10.0,
-  "particleCount": 100000,
-  "spawnOverTime": 10.0
+  "particleCount": 4096,
+  "spawnOverTime": 5.0
 }

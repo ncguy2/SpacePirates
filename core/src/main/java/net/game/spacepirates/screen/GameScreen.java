@@ -4,16 +4,21 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.kotcrab.vis.ui.widget.VisImage;
 import net.game.spacepirates.SpacePiratesLauncher;
+import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.engine.WorldEngine;
 import net.game.spacepirates.entity.Entity;
 import net.game.spacepirates.entity.component.CollisionComponent;
+import net.game.spacepirates.entity.component.ParticleComponent;
+import net.game.spacepirates.entity.component.RotationComponent;
 import net.game.spacepirates.entity.types.LocalPlayer;
+import net.game.spacepirates.particles.system.TexturedTemporalParticleSystem;
 import net.game.spacepirates.render.AbstractRenderer;
 import net.game.spacepirates.render.BufferedRenderer;
 import net.game.spacepirates.system.CannonSystem;
@@ -116,6 +121,32 @@ public class GameScreen implements Screen {
         engine = new WorldEngine(world);
         engine.addSystem(new ParticleSystem(world));
         engine.addSystem(new CannonSystem(world));
+
+        Entity texturedParticles = world.addEntityImmediate();
+
+        RotationComponent rotator = texturedParticles.setRootComponent(new RotationComponent("Rotator"));
+        rotator.degreesPerSecond = -5;
+
+        ParticleComponent particles = rotator.addComponent(new ParticleComponent("Particles"));
+        particles.systemName = "Texture Test";
+        particles.onInit = (comp, sys) -> {
+            sys.as(TexturedTemporalParticleSystem.class, ttps -> {
+                AssetHandler.get().GetAsync("textures/Triskelion_D.png", Texture.class, t -> {
+                    ttps.setSpawnTexture(t);
+                });
+                AssetHandler.get().GetAsync("textures/Triskelion_N.png", Texture.class, t -> {
+                    ttps.setColourTexture(t);
+                });
+//                ttps.setSpawnTextureRef("textures/awesomeface.png");
+//                ttps.setColourTextureRef("textures/awesomeface.png");
+                ttps.setSize(512, 512);
+                ttps.setSpawnMaskChannel(0);
+            });
+            sys.addUniform("u_initialLife", loc -> {
+                Gdx.gl.glUniform1f(loc, 3);
+            });
+        };
+        texturedParticles.getTransform().translate(new Vector2(512, 512));
     }
 
     void check() {

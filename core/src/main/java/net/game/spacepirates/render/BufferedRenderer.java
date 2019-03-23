@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import net.game.spacepirates.entity.component.RenderComponent;
 import net.game.spacepirates.input.PostProcessingCamera;
+import net.game.spacepirates.render.post.EmissivePostProcessor;
 import net.game.spacepirates.render.post.ParticlePostProcessor;
 import net.game.spacepirates.world.PhysicsWorld;
 
@@ -35,19 +36,19 @@ public class BufferedRenderer extends AbstractRenderer {
     public void init() {
         worldCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch = new SpriteBatch();
-        ppCamera = new PostProcessingCamera<>(worldCamera, new ParticlePostProcessor());
+        ppCamera = new PostProcessingCamera<>(worldCamera, new ParticlePostProcessor(), new EmissivePostProcessor("texture.emissive", ParticlePostProcessor.PARTICLE_TEXTURE_NAME));
         region = new TextureRegion();
         loadShader();
     }
 
     public void loadShader() {
-        FileHandle vert = Gdx.files.internal("shaders/simple/simple.vert");
+        FileHandle vert = Gdx.files.internal("shaders/buffered/buffered.vert");
         if(!vert.exists()) {
             System.out.println("Cannot find " + vert.toString());
             return;
         }
 
-        FileHandle frag = Gdx.files.internal("shaders/simple/simple.frag");
+        FileHandle frag = Gdx.files.internal("shaders/buffered/buffered.frag");
         if(!frag.exists()) {
             System.out.println("Cannot find " + frag.toString());
             return;
@@ -81,6 +82,7 @@ public class BufferedRenderer extends AbstractRenderer {
         ppCamera.clear(Color.BLACK, true, false);
 
         batch.setProjectionMatrix(worldCamera.combined);
+        batch.setShader(shader);
         batch.begin();
         batch.enableBlending();
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);

@@ -32,9 +32,9 @@ public class ParticlePostProcessor extends AbstractPostProcessor<ParticlePostPro
         colourCurve = new GLColourCurve();
         colourCurve.Add(Color.BLACK, 0);
         colourCurve.Add(Color.CYAN, 1);
-        colourCurve.Add(Color.GREEN, 4);
-        colourCurve.Add(Color.YELLOW, 8);
-        colourCurve.Add(Color.RED, 16);
+        colourCurve.Add(Color.GREEN, 2);
+        colourCurve.Add(Color.YELLOW, 3);
+        colourCurve.Add(Color.RED, 4);
 
         return this;
     }

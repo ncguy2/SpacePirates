@@ -1,7 +1,6 @@
 package net.game.spacepirates.entity.component;
 
 import net.game.spacepirates.data.Transform2D;
-import net.game.spacepirates.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +27,8 @@ public class SceneComponent<T extends SceneComponent> extends EntityComponent<T>
             getAttachmentTransform().adopt(((SceneComponent) component).transform);
         }
 
+        component.onAddToParent(this);
+
         return component;
     }
 
@@ -38,17 +39,9 @@ public class SceneComponent<T extends SceneComponent> extends EntityComponent<T>
             getAttachmentTransform().release(((SceneComponent) component).transform);
         }
 
+        component.onRemoveFromParent();
+
         return component;
-    }
-
-    @Override
-    public void onAddToEntity(Entity entity) {
-        super.onAddToEntity(entity);
-    }
-
-    @Override
-    public void onRemoveFromEntity(Entity entity) {
-        super.onRemoveFromEntity(entity);
     }
 
     @Override
