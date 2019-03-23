@@ -11,6 +11,7 @@ import com.kotcrab.vis.ui.VisUI;
 import com.strongjoshua.console.GUIConsole;
 import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.cmd.SPCommandExecutor;
+import net.game.spacepirates.data.messaging.MessageBus;
 import net.game.spacepirates.input.InputHelper;
 import net.game.spacepirates.particles.ParticleService;
 import net.game.spacepirates.screen.MainMenuScreen;
@@ -36,6 +37,7 @@ public class SpacePiratesLauncher extends Game {
     public void create() {
         ShaderProgram.pedantic = false;
 
+        MessageBus.get().addInterceptor(msg -> System.out.printf("[%s] >> %s%n", msg.getRef(), msg.getData().toString()));
 
         try {
             initServices();
@@ -62,7 +64,8 @@ public class SpacePiratesLauncher extends Game {
 
     @Override
     public void render() {
-        AssetHandler.instance().Update();
+        AssetHandler.get().Update();
+        MessageBus.get().update();
         super.render();
 
         globalStage.act(Gdx.graphics.getDeltaTime());

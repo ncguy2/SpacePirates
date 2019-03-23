@@ -61,6 +61,17 @@ public class Transform2D {
         child.clearParent();
     }
 
+    public void rotate(float deg) {
+        rotation += deg;
+        while(rotation > 360) {
+            rotation -= 360;
+        }
+
+        while(rotation < 0) {
+            rotation += 360;
+        }
+    }
+
     private Transform2D getParent() {
         return parent;
     }

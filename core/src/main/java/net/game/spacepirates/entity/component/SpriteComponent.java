@@ -41,7 +41,7 @@ public class SpriteComponent extends RenderComponent<SpriteComponent> {
 
     private void loadSprite() {
         loadingSprite = true;
-        AssetHandler.instance().GetAsync(textureRef, Texture.class, t -> {
+        AssetHandler.get().GetAsync(textureRef, Texture.class, t -> {
             sprite = new Sprite(t);
             loadingSprite = false;
         });
@@ -51,7 +51,7 @@ public class SpriteComponent extends RenderComponent<SpriteComponent> {
 //    public void collectRenderables(List<RenderProxy> proxies) {
 //        RenderProxy proxy = new RenderProxy();
 //        proxy.transform = this.transform.copy();
-//        AssetHandler.instance().GetAsync(textureRef, Texture.class, t -> proxy.texture = new TextureRegion(t));
+//        AssetHandler.get().GetAsync(textureRef, Texture.class, t -> proxy.texture = new TextureRegion(t));
 //        proxy.colour = colour;
 //        proxies.add(proxy);
 //    }

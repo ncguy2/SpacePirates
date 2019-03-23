@@ -5,9 +5,12 @@
   "uniforms": [
     "float u_devianceRadius = 32"
   ],
+  "imports": [
+    "/particles/includes/random.glsl"
+  ],
   "fragment": [
-    "float angle = Random();",
-    "float dist = Random() * u_devianceRadius;",
+    "float angle = random();",
+    "float dist = random() * u_devianceRadius;",
     "angle = radians(angle * 360);",
     "datum.Position = normalize(vec2(cos(angle), sin(angle))) * dist;",
     "datum.Velocity = vec2(0.0);"

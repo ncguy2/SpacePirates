@@ -1,6 +1,7 @@
 package net.game.spacepirates.world;
 
 import com.badlogic.gdx.Gdx;
+import net.game.spacepirates.data.messaging.MessageBus;
 import net.game.spacepirates.entity.Entity;
 import net.game.spacepirates.entity.component.EntityComponent;
 import net.game.spacepirates.entity.component.RenderComponent;
@@ -65,8 +66,10 @@ public class GameWorld {
         Gdx.app.postRunnable(() -> removeEntityImmediate(e));
     }
     public boolean removeEntityImmediate(Entity e) {
-        e.rootComponent.components.forEach(c -> c.onRemoveFromEntity(e));
+        e.rootComponent.components.forEach(EntityComponent::onRemoveFromParent);
         e.rootComponent.components.clear();
+        e.rootComponent.onRemoveFromParent();
+        MessageBus.get().dispatch(Entity.EntityTopics.ENTITY_DESTROYED, this);
         return entities.remove(e);
     }
 
@@ -76,13 +79,14 @@ public class GameWorld {
             if(!entity.isEnabled()) {
                 continue;
             }
-            Future<?> submit = executorService.submit(() -> entity.update(delta));
-            futures.add(submit);
+//            Future<?> submit = executorService.submit(new NamedRunnable(entity.rootComponent.name, () -> entity.update(delta)));
+//            futures.add(submit);
+            entity.update(delta);
         }
 
-        while(!futures.isEmpty()) {
-            futures.removeIf(Future::isDone);
-        }
+//        while(!futures.isEmpty()) {
+//            futures.removeIf(Future::isDone);
+//        }
     }
 
     public Stream<Entity> getEntitiesWith(Class<? extends EntityComponent>... components) {
@@ -94,4 +98,21 @@ public class GameWorld {
         entities.stream().filter(Entity::isEnabled).forEach(e -> components.addAll(e.getAll(RenderComponent.class)));
         return components.stream();
     }
+
+    public static class NamedRunnable implements Runnable {
+
+        private final String name;
+        private final Runnable task;
+
+        public NamedRunnable(String name, Runnable task) {
+            this.name = name;
+            this.task = task;
+        }
+
+        @Override
+        public void run() {
+            task.run();
+        }
+    }
+
 }

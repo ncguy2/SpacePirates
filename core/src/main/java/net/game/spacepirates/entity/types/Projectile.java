@@ -53,10 +53,11 @@ public class Projectile extends Entity implements IEntityDefinition {
 
     @Override
     public void assemble() {
+        setRootComponent(timedDeathComponent);
+
         addComponent(velocityComponent);
         addComponent(spriteComponent);
         addComponent(particleComponent);
-        addComponent(timedDeathComponent);
     }
 
     @Override

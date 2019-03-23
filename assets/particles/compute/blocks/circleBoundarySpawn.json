@@ -6,9 +6,12 @@
     "float u_circleRadius = 32",
     "float u_devianceRadius = 8"
   ],
+  "imports": [
+    "/particles/includes/random.glsl"
+  ],
   "fragment": [
-    "float angle = Random();",
-    "float dist = u_circleRadius + mix(-u_devianceRadius, u_devianceRadius, Random());",
+    "float angle = random();",
+    "float dist = u_circleRadius + mix(-u_devianceRadius, u_devianceRadius, random());",
     "angle = radians(angle * 360);",
     "datum.Position = normalize(vec2(cos(angle), sin(angle))) * dist;"
   ]

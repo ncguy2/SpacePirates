@@ -5,11 +5,22 @@
   "uniforms": [
     "sampler2D u_spawnTexture",
     "int u_sampleChannel",
-    "vec2 u_size"
+    "vec2 u_size",
+    "int u_maxSpawnAttempts = 64"
+  ],
+  "imports": [
+    "/particles/includes/random.glsl"
   ],
   "fragment": [
-    "vec4 samp = texture(u_spawnTexture, datum.TexCoords);",
-    "datum.Position = (datum.TexCoords * u_size) - (u_size * 0.5);",
-    "datum.MaxLife = datum.Life = (u_initialLife * samp[u_sampleChannel]);"
+    "vec2 coords = vec2(0.0);",
+    "for(int i = 0; i < u_maxSpawnAttempts; i++) {",
+    "   coords = vec2(random(), random());",
+    "   vec4 samp = texture(u_spawnTexture, coords);",
+    "   datum.Position = (coords * u_size) - (u_size * 0.5);",
+    "   datum.MaxLife = datum.Life = (u_initialLife * samp[u_sampleChannel]);",
+    "   datum.Alive = datum.Life > 0;",
+    "   if(datum.Alive) i = u_maxSpawnAttempts;",
+    "}",
+    "datum.TexCoords = coords;"
   ]
 }

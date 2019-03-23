@@ -15,7 +15,7 @@ public class TemporalParticleSystem extends AbstractParticleSystem {
     public void updateSystem(float delta) {
         super.updateSystem(delta);
         float factor = life / profile.spawnOverTime;
-        if(factor > 1) {
+        if(factor > 1 && !isFinishing) {
             beginFinishPhase();
             return;
         }

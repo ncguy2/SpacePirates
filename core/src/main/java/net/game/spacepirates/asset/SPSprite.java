@@ -14,7 +14,7 @@ public class SPSprite extends SPAsset {
     public <T> T convert(Class<T> type) {
 
         if(type.equals(Sprite.class)) {
-            Texture tex = AssetHandler.instance().Get(texture, Texture.class);
+            Texture tex = AssetHandler.get().Get(texture, Texture.class);
             Sprite s = new Sprite(tex);
             s.setSize(size.x, size.y);
             return (T) s;

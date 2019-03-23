@@ -1,7 +1,9 @@
 package net.game.spacepirates.input;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Quaternion;
@@ -10,6 +12,7 @@ import com.badlogic.gdx.math.collision.Ray;
 import net.game.spacepirates.render.buffer.FBO;
 import net.game.spacepirates.render.buffer.FBOFactory;
 import net.game.spacepirates.render.post.AbstractPostProcessor;
+import net.game.spacepirates.render.post.EmissivePostProcessor;
 import net.game.spacepirates.render.post.ParticlePostProcessor;
 import net.game.spacepirates.render.post.PostProcessorContext;
 
@@ -22,12 +25,15 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.badlogic.gdx.graphics.GL20.GL_ONE;
+
 public class PostProcessingCamera<CAMERA extends Camera> {
 
     public static List<String> texturesToRender = new ArrayList<>();
     static {
         texturesToRender.add("texture.diffuse");
         texturesToRender.add(ParticlePostProcessor.PARTICLE_TEXTURE_NAME);
+        texturesToRender.add(EmissivePostProcessor.EMISSIVE_TEXTURE_NAME);
     }
 
     public static List<WeakReference<PostProcessingCamera>> cameraRefs = new ArrayList<>();
@@ -111,10 +117,19 @@ public class PostProcessingCamera<CAMERA extends Camera> {
         batch.begin();
 
         for (Map.Entry<String, Texture> entry : context.namedTextures.entrySet()) {
-            if(texturesToRender.contains(entry.getKey())) {
+            if(texturesToRender.contains(entry.getKey()) && !entry.getKey().endsWith(".additive")) {
                 batch.draw(entry.getValue(), 0, 0, flattenFbo.width(), flattenFbo.height());
             }
         }
+
+        batch.setBlendFunction(GL_ONE, GL_ONE);
+
+        for (Map.Entry<String, Texture> entry : context.namedTextures.entrySet()) {
+            if(texturesToRender.contains(entry.getKey()) && entry.getKey().endsWith(".additive")) {
+                batch.draw(entry.getValue(), 0, 0, flattenFbo.width(), flattenFbo.height());
+            }
+        }
+
         batch.end();
         flattenFbo.end();
 

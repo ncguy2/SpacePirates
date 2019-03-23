@@ -1,7 +1,6 @@
 package net.game.spacepirates.entity.component;
 
 import com.badlogic.gdx.Gdx;
-import net.game.spacepirates.entity.Entity;
 import net.game.spacepirates.particles.ParticleProfile;
 import net.game.spacepirates.particles.ParticleService;
 import net.game.spacepirates.particles.system.AbstractParticleSystem;
@@ -34,7 +33,15 @@ public class ParticleComponent extends SceneComponent<ParticleComponent> {
 
         super.update(delta);
 
-        Gdx.app.postRunnable(() -> system.updateSystem(delta));
+        if(system == null || system.isFinished()) {
+            return;
+        }
+
+        Gdx.app.postRunnable(() -> {
+            if(system != null) {
+                system.updateSystem(delta);
+            }
+        });
     }
 
     public void reinit() {
@@ -83,11 +90,11 @@ public class ParticleComponent extends SceneComponent<ParticleComponent> {
     }
 
     @Override
-    public void onRemoveFromEntity(Entity entity) {
+    public void onRemoveFromParent() {
         if(system != null) {
             system.beginFinishPhase();
             system = null;
         }
-        super.onRemoveFromEntity(entity);
+        super.onRemoveFromParent();
     }
 }

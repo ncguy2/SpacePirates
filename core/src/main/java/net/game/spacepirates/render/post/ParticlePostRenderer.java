@@ -3,6 +3,7 @@ package net.game.spacepirates.render.post;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector2;
 import net.game.spacepirates.asset.AssetHandler;
 import net.game.spacepirates.geometry.InstancedMesh;
 import net.game.spacepirates.particles.ParticleService;
@@ -28,6 +29,10 @@ public class ParticlePostRenderer {
     protected Texture texture;
     protected InstancedMesh mesh;
 
+    public static final boolean useInstancedRendering = true;
+
+    public float renderScale = 1;
+
     public ParticlePostRenderer() {
         Map<String, String> params = new HashMap<>();
         params.put("p_BindingPoint", "0");
@@ -35,23 +40,54 @@ public class ParticlePostRenderer {
         globalIndexBuffer = new ShaderStorageBufferObject(Integer.BYTES);
         globalIndexBuffer.init();
 
-        shader = new ReloadableShaderProgram("Particle Renderer", Gdx.files.internal("particles/render/particle.vert"), Gdx.files.internal("particles/render/particle.frag"), params);
-//        AssetHandler.instance().GetAsync("textures/particle/default.png", Texture.class, t -> texture = t);
-        texture = AssetHandler.instance().Get("textures/particle/default.png", Texture.class);
+        String path;
+        if(useInstancedRendering) {
+            path = "particles/render/particleInstanced.vert";
+        }else{
+            path = "particles/render/particleBatched.vert";
+        }
 
-        mesh = new InstancedMesh(true, 4, 8 , VertexAttribute.Position(), VertexAttribute.TexCoords(0));
+        shader = new ReloadableShaderProgram("Particle Renderer", Gdx.files.internal(path), Gdx.files.internal("particles/render/particle.frag"), params);
+//        AssetHandler.get().GetAsync("textures/particle/default.png", Texture.class, t -> texture = t);
+        texture = AssetHandler.get().Get("textures/particle/default.png", Texture.class);
 
-        mesh.setVertices(new float[] {
-                -1, -1, 0, 0, 0,
-                 1, -1, 0, 1, 0,
-                -1,  1, 0, 0, 1,
-                 1,  1, 0, 1, 1
-        });
+        int circleMeshPoints = 16;
 
-        mesh.setIndices(new short[] {
-                0, 1, 2,
-                1, 3, 2
-        });
+        VertexAttribute positionAttr = VertexAttribute.Position();
+        int vertexStride = positionAttr.numComponents;
+
+        float[] verts = new float[(circleMeshPoints + 1) * vertexStride];
+        short[] indxs = new short[circleMeshPoints + 2];
+
+        verts[0] = 0;
+        verts[1] = 0;
+        verts[2] = 0;
+
+        int ptr = 3;
+
+        float stepAngle = 360 / (float) circleMeshPoints;
+
+        indxs[0] = 0;
+        int idxPtr = 1;
+
+        for (int i = 0; i < circleMeshPoints; i++) {
+
+            float angle = stepAngle * i;
+            Vector2 dir = Vector2.X.cpy().setAngle(angle).nor();
+
+            verts[ptr++] = dir.x; // X
+            verts[ptr++] = dir.y; // Y
+            verts[ptr++] = 0; // Z
+
+            indxs[idxPtr++] = (short) (i + 1);
+        }
+        //noinspection UnusedAssignment
+        indxs[idxPtr++] = indxs[1];
+
+        mesh = new InstancedMesh(true, verts.length, indxs.length, positionAttr);
+
+        mesh.setVertices(verts);
+        mesh.setIndices(indxs);
     }
 
     public FBO getFbo() {
@@ -59,10 +95,14 @@ public class ParticlePostRenderer {
     }
 
     public FBO getFbo(int width, int height) {
+
+        renderScale = 0.6f;
+        renderScale = Math.max(0.1f, Math.min(renderScale, 2.0f));
+
         if (fbo == null) {
             fbo = new FBO(Pixmap.Format.RGBA8888, width, height, true, true);
         }
-        fbo.resize(width, height);
+        fbo.resize(Math.round(width * renderScale), Math.round(height * renderScale));
         return fbo;
     }
 
@@ -111,7 +151,8 @@ public class ParticlePostRenderer {
         globalIndexBuffer.bind(4);
 
         mesh.instanceCount = allInts.length;
-        mesh.render(shader.program(), GL20.GL_TRIANGLES);
+        shader.program().setUniformi("u_particleCount", allInts.length);
+        mesh.render(shader.program(), GL20.GL_TRIANGLE_FAN);
 
         Gdx.gl.glBlendEquation(GL30.GL_FUNC_ADD);
         shader.program().end();

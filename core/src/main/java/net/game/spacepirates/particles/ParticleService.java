@@ -222,4 +222,12 @@ public class ParticleService extends BaseService {
             l.removeAll(indexList);
         }
     }
+
+    public interface MessageTopics {
+
+        String SYSTEM_STARTED = "particle.system.started";
+        String SYSTEM_FINISHED = "particle.system.finished";
+
+    }
+
 }

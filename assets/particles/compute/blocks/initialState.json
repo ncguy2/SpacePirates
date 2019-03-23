@@ -15,6 +15,6 @@
     "datum.Life = u_initialLife;",
     "datum.MaxLife = u_initialLife;",
     "datum.Scale = u_initialScale.xy;",
-    "datum.TexCoords = vec2(Random(), Random());"
+    "datum.TexCoords = vec2(0.0);"
   ]
 }
