@@ -1,8 +1,5 @@
 package net.game.spacepirates.render.post;
 
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import net.game.spacepirates.render.buffer.FBO;
 import net.game.spacepirates.util.ReloadableShaderProgram;
 
@@ -19,13 +16,12 @@ public abstract class AbstractPostProcessor<T extends AbstractPostProcessor> {
     }
 
     public abstract T init();
-    public Texture[] render(Batch batch, Camera camera, Texture[] input, float delta) {
+    public void render(PostProcessorContext context) {
         if(enabled) {
-            return _render(batch, camera, input, delta);
+            _render(context);
         }
-        return input;
     }
 
-    public abstract Texture[] _render(Batch batch, Camera camera, Texture[] input, float delta);
+    public abstract void _render(PostProcessorContext context);
     public abstract void shutdown();
 }

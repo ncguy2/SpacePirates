@@ -12,7 +12,7 @@ public class FBOFactory {
         builder.addBasicColorTextureAttachment(Pixmap.Format.RGBA8888); // Emissive
         builder.addBasicColorTextureAttachment(Pixmap.Format.RGBA8888); // RG: Texture coordinates, B: Occlusion
 
-        builder.addBasicDepthRenderBuffer();
+        builder.addBasicStencilDepthPackedRenderBuffer();
 
         return builder.buildFbo();
     }

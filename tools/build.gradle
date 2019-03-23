@@ -1,0 +1,10 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-tools'
+
+repositories { maven { url "https://dl.bintray.com/ice1000/ice1000" } }
+
+dependencies {
+  compile project(':core')
+  compile 'com.bulenkov:darcula:2018.2'
+}
+        

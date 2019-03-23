@@ -1,8 +1,6 @@
 package net.game.spacepirates.particles;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
-import net.game.spacepirates.services.Services;
 import net.game.spacepirates.util.ComputeShader;
 import net.game.spacepirates.util.ReloadableComputeShader;
 import net.game.spacepirates.util.ShaderPreprocessor;
@@ -19,28 +17,6 @@ public class ParticleShader extends ReloadableComputeShader {
 
     protected List<ParticleBlock> blocks;
 
-    public static Map<ParticleBlock.Type, ParticleShader> fromProfile(ParticleProfile profile, boolean register) {
-        HashMap<ParticleBlock.Type, ParticleShader> map = new HashMap<>();
-
-        FileHandle handle = Gdx.files.internal("particles/compute/framework.comp");
-        map.put(ParticleBlock.Type.Spawn, new ParticleShader(profile.name + ": Spawn", handle, new HashMap<>(), register));
-        map.put(ParticleBlock.Type.Update, new ParticleShader(profile.name + ": Update", handle, new HashMap<>(), register));
-
-        for (String block : profile.blocks)
-            Services.get(ParticleService.class)
-                    .getParticleBlock(block)
-                    .ifPresent(b -> {
-                        ParticleShader ps = map.get(b.type);
-                        if(ps != null)
-                            ps.addBlock(b);
-                    });
-
-        if(register)
-            map.values().forEach(ParticleShader::reloadImmediate);
-
-        return map;
-    }
-
     public ParticleShader(String name, FileHandle handle) {
         this(name, handle, new HashMap<>());
     }
@@ -48,6 +24,7 @@ public class ParticleShader extends ReloadableComputeShader {
     public ParticleShader(String name, FileHandle handle, Map<String, String> macroParams) {
         this(name, handle, macroParams, true);
     }
+
     public ParticleShader(String name, FileHandle handle, Map<String, String> macroParams, boolean register) {
         super(name, handle, macroParams, register);
     }
@@ -62,22 +39,20 @@ public class ParticleShader extends ReloadableComputeShader {
         return blocks;
     }
 
-    int getTypeScore(String type) {
+    public String getImports() {
+        List<String> allImports = new ArrayList<>();
+        for (ParticleBlock block : getBlocks()) {
+            Collections.addAll(allImports, block.getImports());
+        }
 
-        if(type.equalsIgnoreCase("float"))
-            return 1;
-        if(type.equalsIgnoreCase("vec2"))
-            return 2;
-        if(type.equalsIgnoreCase("vec3"))
-            return 3;
-        if(type.equalsIgnoreCase("vec4"))
-            return 4;
+        String filePath = handle.parent().path() + "/";
 
-        return 0;
-    }
-
-    boolean hasDefault(String u) {
-        return u.contains("=");
+        StringBuilder sb = new StringBuilder();
+        allImports.stream()
+                  .map(p -> "/" + ShaderPreprocessor.resolve(filePath, p))
+                  .distinct()
+                  .forEach(p -> sb.append("#pragma include(\"").append(p).append("\")\n"));
+        return sb.toString();
     }
 
     public String getUniforms() {
@@ -87,12 +62,12 @@ public class ParticleShader extends ReloadableComputeShader {
         }
 
         Map<String, List<String>> collect = allUniforms.stream()
-                .collect(Collectors.groupingBy(s -> s.split(" ")[1]));
+                                                       .collect(Collectors.groupingBy(s -> s.split(" ")[1]));
 
         allUniforms.clear();
 
         collect.forEach((name, entries) -> {
-            if(entries.size() == 1) {
+            if (entries.size() == 1) {
                 allUniforms.add(entries.get(0));
                 return;
             }
@@ -105,7 +80,7 @@ public class ParticleShader extends ReloadableComputeShader {
                 String aType = a.split(" ")[0];
                 String bType = b.split(" ")[0];
                 int compare = Integer.compare(getTypeScore(aType), getTypeScore(bType));
-                if(compare == 0)
+                if (compare == 0)
                     return Boolean.compare(hasDefault(a), hasDefault(b));
                 return compare;
             });
@@ -116,19 +91,18 @@ public class ParticleShader extends ReloadableComputeShader {
             allUniforms.add(bestFit);
         });
 
-        String join = String.join("\n", allUniforms.stream().map(s -> {
-            if(s.endsWith(";"))
+        return allUniforms.stream().map(s -> {
+            if (s.endsWith(";"))
                 return s;
             return s + ";";
-        }).map(s -> "uniform " + s).collect(Collectors.toList()));
-        return join;
+        }).map(s -> "uniform " + s).collect(Collectors.joining("\n"));
     }
 
     public String getDeclarations() {
         StringBuilder sb = new StringBuilder();
         for (ParticleBlock block : getBlocks())
             sb.append(block.methodSignature())
-                    .append(";\n");
+              .append(";\n");
         return sb.toString();
     }
 
@@ -136,9 +110,9 @@ public class ParticleShader extends ReloadableComputeShader {
         StringBuilder sb = new StringBuilder();
         for (ParticleBlock block : getBlocks())
             sb.append(block.methodName())
-                    .append("(")
-                    .append(block.datumKey())
-                    .append(");\n");
+              .append("(")
+              .append(block.datumKey())
+              .append(");\n");
         return sb.toString();
     }
 
@@ -146,14 +120,15 @@ public class ParticleShader extends ReloadableComputeShader {
         StringBuilder sb = new StringBuilder();
         for (ParticleBlock block : getBlocks()) {
             sb.append(block.methodSignature())
-                    .append(" {\n")
-                    .append(block.fragment("\t"))
-                    .append("\n}\n");
+              .append(" {\n")
+              .append(block.fragment("\t"))
+              .append("\n}\n");
         }
         return sb.toString();
     }
 
     public String getScript() {
+        ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("imports", ParticleShader.this::getImports));
         ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("uniforms", ParticleShader.this::getUniforms));
         ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("declarations", ParticleShader.this::getDeclarations));
         ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("invocations", ParticleShader.this::getInvocations));
@@ -166,6 +141,7 @@ public class ParticleShader extends ReloadableComputeShader {
         return new ComputeShader(handle, macroParams) {
             @Override
             public void compile() {
+                ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("imports", ParticleShader.this::getImports));
                 ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("uniforms", ParticleShader.this::getUniforms));
                 ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("declarations", ParticleShader.this::getDeclarations));
                 ShaderPreprocessor.SetBlock(new ShaderPreprocessor.ShaderInjectionBlock("invocations", ParticleShader.this::getInvocations));
@@ -180,7 +156,7 @@ public class ParticleShader extends ReloadableComputeShader {
         this.particleBuffer = buffer;
     }
 
-    public void dispatch(){
+    public void dispatch() {
         dispatch(1);
     }
 
@@ -200,6 +176,24 @@ public class ParticleShader extends ReloadableComputeShader {
     public void setUniform(String uniform, Consumer<Integer> setter) {
         if (program != null)
             program.setUniform(uniform, setter);
+    }
+
+    int getTypeScore(String type) {
+
+        if (type.equalsIgnoreCase("float"))
+            return 1;
+        if (type.equalsIgnoreCase("vec2"))
+            return 2;
+        if (type.equalsIgnoreCase("vec3"))
+            return 3;
+        if (type.equalsIgnoreCase("vec4"))
+            return 4;
+
+        return 0;
+    }
+
+    boolean hasDefault(String u) {
+        return u.contains("=");
     }
 
 }

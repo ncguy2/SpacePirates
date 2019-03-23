@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import net.game.spacepirates.particles.system.AbstractParticleSystem;
 import net.game.spacepirates.services.BaseService;
+import net.game.spacepirates.util.ArrayUtils;
 import net.game.spacepirates.util.buffer.ShaderStorageBufferObject;
 import net.game.spacepirates.util.io.Json;
 
@@ -81,35 +82,28 @@ public class ParticleService extends BaseService {
     }
 
     public int[] getDeadList() {
-        int amount = 0;
         byte[] bytes;
 
-        ShaderStorageBufferObject deadBuffer = buffer.getDeadBuffer();
-        ByteBuffer map = deadBuffer.getData();
-        map.position(0);
+        int amount = buffer.getDeadBufferCounter().getAndReset();
 
-        amount = map.getInt(0);
+        ShaderStorageBufferObject deadBuffer = buffer.getDeadBuffer();
 
         if (amount == 0) {
-            map.position(0);
             return new int[0];
         }
 
+        ByteBuffer map = deadBuffer.getData();
         bytes = new byte[amount * Integer.BYTES];
-        map.position(Integer.BYTES);
-        map.get(bytes);
-
-        map.putInt(0, 0);
         map.position(0);
-
-        deadBuffer.setData(map);
+        map.get(bytes);
+        map.position(0);
 
         int[] indices = new int[amount];
 
         byte[] tmpArr = new byte[Integer.BYTES];
         for (int i = 0; i < bytes.length; i += Integer.BYTES) {
             System.arraycopy(bytes, i, tmpArr, 0, Integer.BYTES);
-            indices[i / Integer.BYTES] = ByteBuffer.wrap(tmpArr).getInt();
+            indices[i / Integer.BYTES] = ArrayUtils.glArrToInt(tmpArr);
         }
 
         return indices;
@@ -138,6 +132,18 @@ public class ParticleService extends BaseService {
         Arrays.stream(indices)
               .boxed()
               .forEach(getInts(system)::remove);
+    }
+
+    public int[] getAllInts() {
+        List<Integer> idxs = new ArrayList<>();
+
+        getKeys().stream()
+                 .map(this::getInts)
+                 .forEach(idxs::addAll);
+
+        return idxs.stream()
+                   .mapToInt(i -> i)
+                   .toArray();
     }
 
     protected void registerDefaultParticleBlocks() {
@@ -172,6 +178,11 @@ public class ParticleService extends BaseService {
     }
 
     private void addIssuedIndices(AbstractParticleSystem sys, int... indices) {
+
+        if(indices == null || indices.length == 0) {
+            return;
+        }
+
         List<Integer> ints = getInts(sys);
         Arrays.stream(indices).forEach(ints::add);
     }
@@ -204,11 +215,11 @@ public class ParticleService extends BaseService {
 
     private void releaseIndices(int... indices) {
 
-        System.out.println("Releasing dead indices, found " + indices.length);
-
         List<Integer> indexList = IntStream.of(indices)
                                            .boxed()
                                            .collect(Collectors.toList());
-        allocationMap.values().forEach(l -> l.removeAll(indexList));
+        for (List<Integer> l : allocationMap.values()) {
+            l.removeAll(indexList);
+        }
     }
 }

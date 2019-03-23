@@ -58,8 +58,9 @@ public abstract class Curve<T> {
         Item<T> a = null;
         Item<T> b = null;
 
-        for (Item<T> item : items) {
-            if(alpha > item.value) {
+        for (int i = items.size() - 1; i >= 0; i--) {
+            Item<T> item = items.get(i);
+            if (alpha > item.value) {
                 a = item;
                 break;
             }

@@ -1,0 +1,9 @@
+{
+  "name": "DebugRedBlue",
+  "type": "Update",
+  "datumKey": "datum",
+  "uniforms": [],
+  "fragment": [
+    "datum.Colour.rgb = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), datum.Life / 10);"
+  ]
+}

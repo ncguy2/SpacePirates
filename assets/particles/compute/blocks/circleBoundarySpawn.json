@@ -3,14 +3,13 @@
   "type": "Spawn",
   "datumKey": "datum",
   "uniforms": [
-    "float u_devianceRadius = 32"
+    "float u_circleRadius = 32",
+    "float u_devianceRadius = 8"
   ],
   "fragment": [
     "float angle = Random();",
-    "float dist = u_devianceRadius;",
+    "float dist = u_circleRadius + mix(-u_devianceRadius, u_devianceRadius, Random());",
     "angle = radians(angle * 360);",
-    "datum.Position = normalize(vec2(cos(angle), sin(angle))) * dist;",
-    "datum.Velocity = vec2(0.0);",
-    "datum.Scale = vec2(4.0);"
+    "datum.Position = normalize(vec2(cos(angle), sin(angle))) * dist;"
   ]
 }

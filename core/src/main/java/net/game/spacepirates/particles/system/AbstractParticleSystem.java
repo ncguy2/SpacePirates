@@ -2,12 +2,16 @@ package net.game.spacepirates.particles.system;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix3;
 import net.game.spacepirates.particles.*;
 import net.game.spacepirates.services.Services;
+import net.game.spacepirates.util.ArrayUtils;
 import net.game.spacepirates.util.ComputeShader;
 import net.game.spacepirates.util.buffer.ShaderStorageBufferObject;
+import net.game.spacepirates.util.curve.Curve;
+import net.game.spacepirates.util.curve.GLColourCurve;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -22,22 +26,25 @@ public abstract class AbstractParticleSystem {
     protected final List<Consumer<ShaderProgram>> uniformTasks;
     protected final Map<String, String> macroParams;
 
+    protected boolean spawnerEnabled = true;
+    protected boolean simulationEnabled = true;
+
     protected ParticleProfile profile;
     protected ParticleBuffer buffer;
     protected Supplier<Matrix3> transformSupplier;
     protected ParticleShader spawnShader;
     protected ParticleShader updateShader;
     protected float life;
+    protected int loopCounter = 0;
 
     protected ShaderStorageBufferObject indexBuffer;
-    protected ShaderStorageBufferObject newIndexBuffer;
 
     public AbstractParticleSystem(ParticleProfile profile, ParticleBuffer buffer) {
         this.profile = profile;
         this.buffer = buffer;
 
         indexBuffer = new ShaderStorageBufferObject(profile.particleCount * Integer.BYTES);
-        newIndexBuffer = new ShaderStorageBufferObject(profile.particleCount * Integer.BYTES);
+        indexBuffer.init();
 
         this.uniformSetters = new HashMap<>();
         this.uniformTasks = new ArrayList<>();
@@ -52,11 +59,34 @@ public abstract class AbstractParticleSystem {
 
         ParticleService particleService = Services.get(ParticleService.class);
         for (String block : profile.blocks) {
-            particleService.getParticleBlock(block).ifPresent(this::addBlock);
+            Optional<ParticleBlock> particleBlock = particleService.getParticleBlock(block);
+            if(particleBlock.isPresent()) {
+                this.addBlock(particleBlock.get());
+            }else{
+                System.err.println("No particle block registered with name: " + block);
+            }
         }
 
         spawnShader.reloadImmediate();
         updateShader.reloadImmediate();
+    }
+
+    public boolean isSpawnerEnabled() {
+        return spawnerEnabled;
+    }
+
+    public AbstractParticleSystem setSpawnerEnabled(boolean spawnerEnabled) {
+        this.spawnerEnabled = spawnerEnabled;
+        return this;
+    }
+
+    public boolean isSimulationEnabled() {
+        return simulationEnabled;
+    }
+
+    public AbstractParticleSystem setSimulationEnabled(boolean simulationEnabled) {
+        this.simulationEnabled = simulationEnabled;
+        return this;
     }
 
     public void addUniform(String uniform, Consumer<Integer> setter) {
@@ -75,17 +105,13 @@ public abstract class AbstractParticleSystem {
     protected void updateIndexBuffer() {
         List<Integer> particleIndices = Services.get(ParticleService.class).getInts(this);
 
-        ByteBuffer b = ByteBuffer.allocate(particleIndices.size() * Integer.BYTES);
-        particleIndices.forEach(b::putInt);
+        ByteBuffer b = ByteBuffer.allocateDirect(particleIndices.size() * Integer.BYTES);
+        particleIndices.stream().sorted().forEach(i -> {
+            byte[] bytes = ArrayUtils.intToGLArr(i);
+            b.put(bytes);
+        });
         b.position(0);
-//        indexBuffer.setData(b);
-
-        if(indexBuffer != null) {
-            indexBuffer.dispose();
-            indexBuffer = null;
-        }
-
-        indexBuffer = new ShaderStorageBufferObject(b, 2);
+        indexBuffer.setData(b);
     }
 
     public int[] fetchParticleIndices(int amount) {
@@ -107,6 +133,11 @@ public abstract class AbstractParticleSystem {
     public abstract boolean canStillSpawn();
 
     public int spawnParticles(int amount) {
+
+        if(!isSpawnerEnabled()) {
+            return 0;
+        }
+
         int[] indices = fetchParticleIndices(amount);
         if (indices.length == 0) {
             // No free indices in buffer
@@ -116,12 +147,15 @@ public abstract class AbstractParticleSystem {
         ComputeShader program = spawnShader.program();
         program.bind();
 
-        ByteBuffer b = ByteBuffer.allocate(indices.length * Integer.BYTES);
-        IntStream.of(indices).forEach(b::putInt);
+        ByteBuffer b = ByteBuffer.allocateDirect(indices.length * Integer.BYTES);
+        IntStream.of(indices).forEach(i -> {
+            byte[] bytes = ArrayUtils.intToGLArr(i);
+            b.put(bytes);
+        });
         b.position(0);
-        newIndexBuffer.setData(b);
+        indexBuffer.setData(b);
 
-        program.bindSSBO(3, newIndexBuffer);
+        program.bindSSBO(2, indexBuffer);
 
         setCommonUniforms(indices, program, Gdx.graphics.getDeltaTime());
 
@@ -133,6 +167,11 @@ public abstract class AbstractParticleSystem {
     }
 
     public void updateParticles(float delta) {
+
+        if(!isSimulationEnabled()) {
+            return;
+        }
+
         life += delta;
 
         int[] indices = getIndices();
@@ -177,10 +216,27 @@ public abstract class AbstractParticleSystem {
         // RNG seed
         program.setUniform("u_rngBaseSeed", loc -> Gdx.gl.glUniform1i(loc, ThreadLocalRandom.current().nextInt()));
 
+        if(profile.curve != null && !profile.curve.items.isEmpty()) {
+            bind("u_curve", profile.curve);
+        }
+
         uniformSetters.forEach(program::setUniform);
 
         program.bindSSBO(0, buffer.getParticleBuffer());
         program.bindSSBO(1, buffer.getDeadBuffer());
+
+        buffer.getDeadBufferCounter().bind(5);
+    }
+
+    public void bind(String uniform, GLColourCurve curve) {
+        List<Curve.Item<Color>> items = curve.items;
+        addUniform(uniform + ".Length", l -> Gdx.gl.glUniform1i(l, items.size()));
+        for (int i = 0; i < items.size(); i++) {
+            Curve.Item<Color> col = items.get(i);
+            String prefix = uniform + ".Entries[" + i + "]";
+            addUniform(prefix + ".Key", l -> Gdx.gl.glUniform1f(l, col.value));
+            addUniform(prefix + ".Value", l -> Gdx.gl.glUniform4f(l, col.item.r, col.item.g, col.item.b, col.item.a));
+        }
     }
 
     public void setTransformSupplier(Supplier<Matrix3> transformSupplier) {
@@ -199,10 +255,35 @@ public abstract class AbstractParticleSystem {
     }
 
     public void beginFinishPhase() {
+        switch (profile.loopingBehaviour) {
+            case None:
+                doFinish();
+                return;
+            case Amount:
+                if(loopCounter >= profile.loopingAmount) {
+                    doFinish();
+                }else{
+                    nextLoop();
+                }
+                return;
+            case Forever:
+                nextLoop();
+                return;
+        }
+    }
+
+    public void doFinish() {
 
     }
 
+    public void nextLoop() {
+        int c = loopCounter;
+        reset();
+        loopCounter = c + 1;
+    }
+
     public void reset() {
+        loopCounter = 0;
         life = 0;
     }
 }
