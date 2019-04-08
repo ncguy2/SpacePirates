@@ -1,8 +1,0 @@
-{
-  "id": "test sprite",
-  "size": {
-    "x": 64,
-    "y": 64
-  },
-  "texture": "textures/awesomeface.png"
-}
