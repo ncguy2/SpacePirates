@@ -1,5 +1,6 @@
 package net.game.spacepirates.script;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import net.game.spacepirates.util.TaskUtils;
 
 import javax.script.*;
@@ -7,15 +8,15 @@ import java.io.Reader;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ScriptingEngine {
 
-    private static ScriptingEngine instance;
-
     public static final int USER_BINDING_SCOPE = ScriptContext.GLOBAL_SCOPE;
-
+    private static ScriptingEngine instance;
     private Map<WeakReference<Object>, ScriptContext> contextMap;
     private ScriptEngineManager mgr;
     private ThreadLocal<ScriptEngine> nashornEngines;
@@ -32,6 +33,31 @@ public class ScriptingEngine {
             instance = new ScriptingEngine();
         }
         return instance;
+    }
+
+    public static Optional<ScriptObjectMirror> LoadObjectMirror(Bindings bindings, String id, Predicate<ScriptObjectMirror> filter) {
+        if (bindings.containsKey(id)) {
+            Object o = bindings.get(id);
+            if (o instanceof ScriptObjectMirror) {
+                ScriptObjectMirror mirror = (ScriptObjectMirror) o;
+                if (filter.test(mirror))
+                    return Optional.of(mirror);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static ScriptFunction LoadFunctionMirror(Bindings bindings, String id) {
+        return LoadObjectMirror(bindings, id, ScriptObjectMirror::isFunction).map(ScriptFunction::new).orElse(null);
+    }
+
+    public static ScriptFunction LoadFunctionMirror(Object handle, String id) {
+        return LoadObjectMirror(handle, id, ScriptObjectMirror::isFunction).map(ScriptFunction::new).orElse(null);
+    }
+
+    public static Optional<ScriptObjectMirror> LoadObjectMirror(Object handle, String id, Predicate<ScriptObjectMirror> filter) {
+        Bindings bindings = get().getContextBindings(handle);
+        return LoadObjectMirror(bindings, id, filter);
     }
 
     public ScriptContext getDefaultContext() {
@@ -63,24 +89,25 @@ public class ScriptingEngine {
         TaskUtils.safeRun(() -> bindContext(handle, engine -> engine.eval(source)));
     }
 
-    public void eval(Object handle, String source) {
-        TaskUtils.safeRun(() -> bindContext(handle, engine -> engine.eval(source)));
+    public void eval(Object handle, String script) {
+        TaskUtils.safeRun(() -> bindContext(handle, engine -> engine.eval(script)));
     }
 
     private ScriptEngine getEngine() {
         return nashornEngines.get();
     }
 
-    private void bindContext(Object handle, ScriptConsumer task) throws ScriptException {
-        bindContext(getContext(handle), task);
+    public ScriptContext bindContext(Object handle, ScriptConsumer task) throws ScriptException {
+        return bindContext(getContext(handle), task);
     }
 
-    private void bindContext(ScriptContext context, ScriptConsumer task) throws ScriptException {
+    private ScriptContext bindContext(ScriptContext context, ScriptConsumer task) throws ScriptException {
         ScriptEngine engine = getEngine();
         engine.setContext(context);
-        if(task != null) {
+        if (task != null) {
             task.accept(engine);
         }
+        return context;
     }
 
     private ScriptContext createContext(Object handle) {
